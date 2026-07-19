@@ -1,6 +1,6 @@
 """
-[방법 3] HTML 요소 기반 매크로
-Python으로 직접 서버 API를 호출하는 방식. 가장 빠르고 강력함.
+[Method 3] API-Based Macro
+Directly calls the server API using Python requests. Fastest and most powerful.
 """
 
 import requests
@@ -8,75 +8,75 @@ import time
 import sys
 
 print("=" * 45)
-print("   HTML 요소 기반 자동 예약 매크로")
+print("   API-Based Auto Booking Macro")
 print("=" * 45)
 print()
 
-# ── 입력 ──
-server = input("서버 주소를 입력하세요 (예: http://192.168.0.1:3000): ").strip().rstrip('/')
+# ── Input ──
+server = input("Enter server address (e.g. http://192.168.0.1:3000): ").strip().rstrip('/')
 if not server:
-    print("서버 주소를 입력해야 합니다.")
-    input("엔터를 눌러 종료...")
+    print("Server address is required.")
+    input("Press Enter to exit...")
     sys.exit()
 
-name = input("예매자 이름을 입력하세요: ").strip()
+name = input("Enter your name: ").strip()
 if not name:
-    print("이름을 입력해야 합니다.")
-    input("엔터를 눌러 종료...")
+    print("Name is required.")
+    input("Press Enter to exit...")
     sys.exit()
 
 print()
 
-# ── STEP 1: 상태 확인 & 예매 열릴 때까지 대기 ──
-print("▶ STEP 1: 서버 연결 및 예매 상태 확인...")
+# ── STEP 1: Check status & wait for booking to open ──
+print(">> STEP 1: Connecting to server and checking booking status...")
 try:
     res = requests.get(f"{server}/api/state", timeout=5)
     state = res.json()
 except Exception as e:
-    print(f"  ❌ 서버 연결 실패: {e}")
-    print("  서버 주소를 다시 확인하세요.")
-    input("엔터를 눌러 종료...")
+    print(f"  ERROR: Could not connect to server: {e}")
+    print("  Please check the server address.")
+    input("Press Enter to exit...")
     sys.exit()
 
-print(f"  예매 열림: {'예' if state['is_open'] else '아니오'}")
-print(f"  남은 좌석: {state['seats_left']} / {state['total_seats']}")
+print(f"  Booking open: {'Yes' if state['is_open'] else 'No'}")
+print(f"  Seats left: {state['seats_left']} / {state['total_seats']}")
 
 if state['seats_left'] == 0:
-    print("  ❌ 이미 매진되었습니다.")
-    input("엔터를 눌러 종료...")
+    print("  ERROR: Sold out.")
+    input("Press Enter to exit...")
     sys.exit()
 
 if not state['is_open']:
     print()
-    print("  ⏳ 예매가 아직 열리지 않았습니다.")
-    print("  예매가 열릴 때까지 자동으로 기다립니다... (0.3초마다 확인)")
+    print("  Booking is not open yet.")
+    print("  Waiting for booking to open... (checking every 0.3s)")
     while not state['is_open']:
         time.sleep(0.3)
         try:
             state = requests.get(f"{server}/api/state", timeout=5).json()
         except:
             pass
-    print("  🟢 예매 시작! 즉시 예약합니다!")
+    print("  Booking is now open! Reserving immediately!")
 
-# ── STEP 2: 토큰 발급 ──
+# ── STEP 2: Get token ──
 print()
-print("▶ STEP 2: 토큰 발급 중...")
+print(">> STEP 2: Getting token...")
 try:
     res = requests.get(f"{server}/api/ticket", timeout=5)
     if res.status_code != 200:
-        print(f"  ❌ 토큰 발급 실패: {res.json().get('error')}")
-        input("엔터를 눌러 종료...")
+        print(f"  ERROR: Failed to get token: {res.json().get('error')}")
+        input("Press Enter to exit...")
         sys.exit()
     token = res.json()['token']
-    print(f"  토큰 발급 성공!")
+    print(f"  Token received!")
 except Exception as e:
-    print(f"  ❌ 오류: {e}")
-    input("엔터를 눌러 종료...")
+    print(f"  ERROR: {e}")
+    input("Press Enter to exit...")
     sys.exit()
 
-# ── STEP 3: 예약 신청 ──
+# ── STEP 3: Reserve ──
 print()
-print("▶ STEP 3: 예약 신청 중...")
+print(">> STEP 3: Submitting reservation...")
 try:
     res = requests.post(
         f"{server}/api/reserve",
@@ -86,14 +86,14 @@ try:
     data = res.json()
     print()
     if data.get('success'):
-        print("🎉 " + "=" * 35)
-        print(f"   예약 성공!")
-        print(f"   이름     : {name}")
-        print(f"   좌석번호 : {data['seat_number']}번")
+        print("=" * 37)
+        print(f"   Booking Successful!")
+        print(f"   Name   : {name}")
+        print(f"   Seat   : {data['seat_number']}")
         print("=" * 37)
     else:
-        print(f"❌ 예약 실패: {data.get('error')}")
+        print(f"ERROR: Booking failed: {data.get('error')}")
 except Exception as e:
-    print(f"  ❌ 오류: {e}")
+    print(f"  ERROR: {e}")
 
-input("\n엔터를 눌러 종료...")
+input("\nPress Enter to exit...")
