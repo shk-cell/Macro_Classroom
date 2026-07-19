@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>매크로실습실</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Malgun Gothic', sans-serif;
+    background: #0f1117; color: #e0e0e0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 100vh; padding: 32px;
+    user-select: none;
+  }
+  .logo {
+    font-size: 13px; font-weight: 900; letter-spacing: 4px;
+    color: #c678ff; margin-bottom: 4px;
+  }
+  .sub { font-size: 11px; color: #555; margin-bottom: 32px; }
+
+  .status-box {
+    width: 100%; background: #1a1d27;
+    border: 1px solid #2a2d3a; border-radius: 12px;
+    padding: 20px; text-align: center; margin-bottom: 24px;
+  }
+  .status-label { font-size: 11px; color: #555; letter-spacing: 1px; margin-bottom: 8px; }
+  .status-value { font-size: 15px; font-weight: 700; color: #888; }
+  .status-value.running { color: #64ff96; }
+  .status-value.stopped { color: #ff5050; }
+
+  .ip-box {
+    width: 100%; background: #1a1d27;
+    border: 1px solid #2a2d3a; border-radius: 12px;
+    padding: 16px 20px; margin-bottom: 24px;
+  }
+  .ip-label { font-size: 11px; color: #555; letter-spacing: 1px; margin-bottom: 6px; }
+  .ip-value {
+    font-size: 18px; font-weight: 900; color: #c678ff;
+    font-family: monospace; letter-spacing: 2px;
+  }
+  .ip-hint { font-size: 11px; color: #444; margin-top: 4px; }
+
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-bottom: 12px; }
+  .btn {
+    border: none; border-radius: 10px; padding: 14px 10px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: all 0.2s;
+  }
+  .btn-start { background: linear-gradient(135deg, #8b3fff, #c678ff); color: #fff; }
+  .btn-stop { background: rgba(255,80,80,0.15); border: 1px solid rgba(255,80,80,0.3); color: #ff5050; }
+  .btn-student { background: rgba(198,120,255,0.1); border: 1px solid rgba(198,120,255,0.25); color: #c678ff; }
+  .btn-admin { background: rgba(255,255,255,0.05); border: 1px solid #333; color: #888; }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .log {
+    width: 100%; background: #0a0a0f; border: 1px solid #222;
+    border-radius: 8px; padding: 12px 14px;
+    font-size: 11px; color: #555; font-family: monospace;
+    max-height: 80px; overflow-y: auto; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="logo">MACRO CLASSROOM</div>
+<div class="sub">매크로 수업 · 콘서트 예약 시스템</div>
+
+<div class="status-box">
+  <div class="status-label">서버 상태</div>
+  <div class="status-value stopped" id="status">● 정지됨</div>
+</div>
+
+<div class="ip-box">
+  <div class="ip-label">접속 주소 (학생 공유용)</div>
+  <div class="ip-value" id="ip-value">-</div>
+  <div class="ip-hint">학생들은 브라우저에서 위 주소:3000 으로 접속</div>
+</div>
+
+<div class="btns">
+  <button class="btn btn-start" id="btn-start" onclick="startServer()">▶ 서버 시작</button>
+  <button class="btn btn-stop" id="btn-stop" onclick="stopServer()" disabled>■ 서버 중지</button>
+  <button class="btn btn-student" id="btn-student" onclick="openStudent()" disabled>🎟 학생 페이지</button>
+  <button class="btn btn-admin" id="btn-admin" onclick="openAdmin()" disabled>⚙ 관리자 페이지</button>
+</div>
+
+<div class="log" id="log">대기 중...</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+let serverIp = '';
+
+function log(msg) {
+  const el = document.getElementById('log');
+  el.textContent = msg;
+}
+
+async function startServer() {
+  document.getElementById('btn-start').disabled = true;
+  log('서버 시작 중...');
+  const result = await ipcRenderer.invoke('start-server');
+  if (result.success) {
+    serverIp = result.ip;
+    document.getElementById('ip-value').textContent = `http://${serverIp}:3000`;
+    document.getElementById('status').textContent = '● 실행 중';
+    document.getElementById('status').className = 'status-value running';
+    document.getElementById('btn-stop').disabled = false;
+    document.getElementById('btn-student').disabled = false;
+    document.getElementById('btn-admin').disabled = false;
+    log(`서버 시작 완료 → http://${serverIp}:3000`);
+  } else {
+    document.getElementById('btn-start').disabled = false;
+    log('오류: ' + result.error);
+  }
+}
+
+async function stopServer() {
+  log('서버 중지 중...');
+  await ipcRenderer.invoke('stop-server');
+  serverIp = '';
+  document.getElementById('ip-value').textContent = '-';
+  document.getElementById('status').textContent = '● 정지됨';
+  document.getElementById('status').className = 'status-value stopped';
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  document.getElementById('btn-student').disabled = true;
+  document.getElementById('btn-admin').disabled = true;
+  log('서버 중지됨.');
+}
+
+function openStudent() { ipcRenderer.send('open-browser', serverIp); }
+function openAdmin() { ipcRenderer.send('open-admin', serverIp); }
+</script>
+</body>
+</html>

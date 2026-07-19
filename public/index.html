@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVA CONCERT - 티켓 예매</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: #0a0a0f; color: #eee; min-height: 100vh; }
+
+  /* ── 상단 헤더 ── */
+  .site-header {
+    background: rgba(10,10,15,0.95);
+    border-bottom: 1px solid #222;
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .site-logo { font-size: 22px; font-weight: 900; letter-spacing: 4px; color: #fff; }
+  .site-logo span { color: #c678ff; }
+  .site-nav { display: flex; gap: 24px; font-size: 13px; color: #888; }
+  .site-nav a { color: #888; text-decoration: none; transition: color 0.2s; }
+  .site-nav a:hover { color: #fff; }
+
+  /* ── 메인 배너 ── */
+  .hero {
+    position: relative;
+    min-height: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 60px 20px;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 60% 40%, #3a0060 0%, #1a0030 40%, #0a0a0f 70%);
+  }
+  .hero-glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 70%, rgba(198,120,255,0.15) 0%, transparent 60%);
+  }
+  .hero-content {
+    position: relative; z-index: 1;
+    text-align: center;
+    max-width: 700px;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(198,120,255,0.15);
+    border: 1px solid rgba(198,120,255,0.4);
+    border-radius: 20px;
+    padding: 5px 18px;
+    font-size: 12px;
+    color: #c678ff;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  .hero-title {
+    font-size: clamp(42px, 8vw, 80px);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    color: #fff;
+    text-shadow: 0 0 60px rgba(198,120,255,0.5);
+  }
+  .hero-title .accent { color: #c678ff; }
+  .hero-sub {
+    margin-top: 16px;
+    font-size: 16px;
+    color: #aaa;
+    line-height: 1.7;
+  }
+  .hero-info {
+    margin-top: 28px;
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .hero-info-item { text-align: center; }
+  .hero-info-label { font-size: 11px; color: #666; letter-spacing: 1px; margin-bottom: 4px; }
+  .hero-info-value { font-size: 15px; font-weight: 700; color: #fff; }
+
+  /* ── 예약 섹션 ── */
+  .reserve-section {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 40px 20px 60px;
+  }
+
+  /* ── 좌석 현황 ── */
+  .seats-board {
+    background: #111118;
+    border: 1px solid #2a2a3a;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+  .seats-board-title {
+    font-size: 13px;
+    color: #888;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .seats-board-title::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #c678ff;
+    box-shadow: 0 0 6px #c678ff;
+  }
+  .seats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .seat {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    transition: all 0.3s;
+    border: 1px solid transparent;
+  }
+  .seat.empty {
+    background: rgba(198,120,255,0.1);
+    border-color: rgba(198,120,255,0.3);
+    color: #c678ff;
+  }
+  .seat.taken {
+    background: rgba(255,255,255,0.05);
+    border-color: #333;
+    color: #555;
+  }
+  .seat .seat-num { font-size: 16px; margin-bottom: 2px; }
+  .seat .seat-name { font-size: 9px; font-weight: 400; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; }
+  .seats-count {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+  .seats-left { color: #c678ff; font-weight: 700; font-size: 16px; }
+  .seats-total { color: #555; }
+
+  /* ── 상태 배너 ── */
+  .status-banner {
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 15px;
+    transition: all 0.4s;
+  }
+  .status-banner.waiting {
+    background: rgba(255,200,0,0.08);
+    border: 1px solid rgba(255,200,0,0.25);
+    color: #ffc800;
+  }
+  .status-banner.open {
+    background: rgba(198,120,255,0.1);
+    border: 1px solid rgba(198,120,255,0.4);
+    color: #c678ff;
+    animation: pulse-border 2s infinite;
+  }
+  .status-banner.closed {
+    background: rgba(255,80,80,0.08);
+    border: 1px solid rgba(255,80,80,0.25);
+    color: #ff5050;
+  }
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(198,120,255,0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(198,120,255,0); }
+  }
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .status-banner.waiting .status-dot { background: #ffc800; }
+  .status-banner.open .status-dot { background: #c678ff; animation: blink 1s infinite; }
+  .status-banner.closed .status-dot { background: #ff5050; }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  /* ── 예약 폼 ── */
+  .reserve-form {
+    background: #111118;
+    border: 1px solid #2a2a3a;
+    border-radius: 16px;
+    padding: 28px 24px;
+  }
+  .reserve-form.disabled { opacity: 0.5; pointer-events: none; }
+  .form-label { font-size: 12px; color: #888; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+  .form-input {
+    width: 100%;
+    background: #0a0a0f;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 16px;
+    color: #fff;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 16px;
+  }
+  .form-input:focus { border-color: #c678ff; }
+  .form-input::placeholder { color: #444; }
+  .reserve-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #8b3fff, #c678ff);
+    border: none;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+  .reserve-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(198,120,255,0.35); }
+  .reserve-btn:active { transform: translateY(0); }
+  .reserve-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ── 결과 메시지 ── */
+  .result-msg {
+    margin-top: 16px;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    display: none;
+    line-height: 1.6;
+  }
+  .result-msg.success {
+    background: rgba(100,255,150,0.1);
+    border: 1px solid rgba(100,255,150,0.3);
+    color: #64ff96;
+  }
+  .result-msg.error {
+    background: rgba(255,80,80,0.1);
+    border: 1px solid rgba(255,80,80,0.3);
+    color: #ff5050;
+  }
+
+  /* ── 예약자 목록 ── */
+  .reserved-list {
+    margin-top: 32px;
+  }
+  .reserved-list-title {
+    font-size: 13px;
+    color: #555;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .reserved-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform: none; } }
+  .reserved-seat {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: rgba(198,120,255,0.15);
+    border: 1px solid rgba(198,120,255,0.3);
+    color: #c678ff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .reserved-name { font-size: 14px; font-weight: 500; }
+  .reserved-time { margin-left: auto; font-size: 11px; color: #555; }
+
+  /* ── 힌트 박스 (매크로 도전용) ── */
+  .hint-box {
+    margin-top: 32px;
+    background: rgba(255,200,0,0.05);
+    border: 1px solid rgba(255,200,0,0.15);
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+  .hint-title { font-size: 12px; color: #ffc800; letter-spacing: 1px; margin-bottom: 10px; font-weight: 700; }
+  .hint-body { font-size: 13px; color: #888; line-height: 1.8; }
+  .hint-body code {
+    background: rgba(255,255,255,0.07);
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: #ccc;
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  /* ── 푸터 ── */
+  .site-footer {
+    border-top: 1px solid #1a1a22;
+    padding: 24px 40px;
+    text-align: center;
+    font-size: 12px;
+    color: #444;
+  }
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<header class="site-header">
+  <div class="site-logo">TICKET<span>X</span></div>
+  <nav class="site-nav">
+    <a href="#">콘서트</a>
+    <a href="#">뮤지컬</a>
+    <a href="#">스포츠</a>
+    <a href="#">전시</a>
+  </nav>
+</header>
+
+<!-- 히어로 배너 -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge">★ 2026 SPECIAL CONCERT ★</div>
+    <div class="hero-title">NOVA<br><span class="accent">ECLIPSE</span> TOUR</div>
+    <div class="hero-sub">단 하루, 단 10석 — 선착순 예매 오픈<br>놓치면 후회하는 올해 최고의 공연</div>
+    <div class="hero-info">
+      <div class="hero-info-item">
+        <div class="hero-info-label">DATE</div>
+        <div class="hero-info-value">2026.09.13 SAT</div>
+      </div>
+      <div class="hero-info-item">
+        <div class="hero-info-label">VENUE</div>
+        <div class="hero-info-value">올림픽공원 체조경기장</div>
+      </div>
+      <div class="hero-info-item">
+        <div class="hero-info-label">SEATS</div>
+        <div class="hero-info-value">잔여 <span id="hero-left">-</span> / 10</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 예약 섹션 -->
+<section class="reserve-section">
+
+  <!-- 좌석 현황판 -->
+  <div class="seats-board">
+    <div class="seats-board-title">실시간 좌석 현황</div>
+    <div class="seats-grid" id="seats-grid"></div>
+    <div class="seats-count">
+      <span>남은 좌석 <span class="seats-left" id="seats-left">-</span>석</span>
+      <span class="seats-total">전체 10석</span>
+    </div>
+  </div>
+
+  <!-- 상태 배너 -->
+  <div class="status-banner waiting" id="status-banner">
+    <span class="status-dot"></span>
+    <span id="status-text">예매 준비 중입니다. 잠시만 기다려 주세요.</span>
+  </div>
+
+  <!-- 예약 폼 -->
+  <div class="reserve-form disabled" id="reserve-form">
+    <label class="form-label" for="name-input">예매자 이름</label>
+    <input class="form-input" id="name-input" type="text" placeholder="이름을 입력하세요" maxlength="20">
+    <button class="reserve-btn" id="reserve-btn" onclick="doReserve()">지금 예매하기</button>
+    <div class="result-msg" id="result-msg"></div>
+  </div>
+
+  <!-- 예약자 목록 -->
+  <div class="reserved-list" id="reserved-list" style="display:none;">
+    <div class="reserved-list-title">▼ 예약 완료</div>
+    <div id="reserved-items"></div>
+  </div>
+
+  <!-- 힌트 박스 -->
+  <div class="hint-box">
+    <div class="hint-title">💡 매크로 도전 힌트</div>
+    <div class="hint-body">
+      예매는 두 단계로 이루어집니다.<br>
+      ① <code>GET /api/ticket</code> → <code>token</code> 값 획득<br>
+      ② <code>POST /api/reserve</code> → <code>{ "name": "이름", "token": "..." }</code> 전송<br><br>
+      현재 상태 확인: <code>GET /api/state</code>
+    </div>
+  </div>
+
+</section>
+
+<!-- 푸터 -->
+<footer class="site-footer">
+  © 2026 TICKETX Corp. All rights reserved.
+</footer>
+
+<script>
+let isOpen = false;
+let reserving = false;
+
+function renderSeats(reservations) {
+  const grid = document.getElementById('seats-grid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= 10; i++) {
+    const r = reservations.find(r => r.seat_number == i);
+    const div = document.createElement('div');
+    div.className = 'seat ' + (r ? 'taken' : 'empty');
+    div.innerHTML = `<div class="seat-num">${r ? '✓' : i}</div><div class="seat-name">${r ? r.name : '빈자리'}</div>`;
+    grid.appendChild(div);
+  }
+}
+
+function renderList(reservations) {
+  const listEl = document.getElementById('reserved-list');
+  const itemsEl = document.getElementById('reserved-items');
+  if (reservations.length === 0) { listEl.style.display = 'none'; return; }
+  listEl.style.display = 'block';
+  itemsEl.innerHTML = reservations.map(r => `
+    <div class="reserved-item">
+      <div class="reserved-seat">${r.seat_number}</div>
+      <div class="reserved-name">${r.name}</div>
+      <div class="reserved-time">${r.reserved_at ? r.reserved_at.slice(11,19) : ''}</div>
+    </div>
+  `).join('');
+}
+
+function updateStatus(state) {
+  const banner = document.getElementById('status-banner');
+  const text = document.getElementById('status-text');
+  const form = document.getElementById('reserve-form');
+
+  if (state.seats_left === 0) {
+    banner.className = 'status-banner closed';
+    text.textContent = '예매가 마감되었습니다. 다음 기회를 노려주세요.';
+    form.classList.add('disabled');
+  } else if (state.is_open) {
+    banner.className = 'status-banner open';
+    text.textContent = '🎟 예매가 시작되었습니다! 지금 바로 예매하세요.';
+    form.classList.remove('disabled');
+  } else {
+    banner.className = 'status-banner waiting';
+    text.textContent = '예매 준비 중입니다. 잠시만 기다려 주세요.';
+    form.classList.add('disabled');
+  }
+
+  isOpen = state.is_open && state.seats_left > 0;
+  document.getElementById('seats-left').textContent = state.seats_left;
+  document.getElementById('hero-left').textContent = state.seats_left;
+}
+
+async function poll() {
+  try {
+    const res = await fetch('/api/state');
+    const state = await res.json();
+    updateStatus(state);
+    renderSeats(state.reservations);
+    renderList(state.reservations);
+  } catch(e) {}
+}
+
+async function doReserve() {
+  if (reserving || !isOpen) return;
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) { showResult('이름을 입력하세요.', 'error'); return; }
+
+  reserving = true;
+  const btn = document.getElementById('reserve-btn');
+  btn.disabled = true;
+  btn.textContent = '처리 중...';
+
+  try {
+    // 1단계: 토큰 발급
+    const ticketRes = await fetch('/api/ticket');
+    if (!ticketRes.ok) {
+      const d = await ticketRes.json();
+      showResult(d.error || '토큰 발급 실패', 'error');
+      return;
+    }
+    const { token } = await ticketRes.json();
+
+    // 2단계: 예약 신청
+    const res = await fetch('/api/reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, token })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showResult(`🎉 ${data.message}`, 'success');
+      document.getElementById('name-input').value = '';
+    } else {
+      showResult(data.error || '예매 실패', 'error');
+    }
+  } catch(e) {
+    showResult('네트워크 오류. 다시 시도하세요.', 'error');
+  } finally {
+    reserving = false;
+    btn.disabled = false;
+    btn.textContent = '지금 예매하기';
+    poll();
+  }
+}
+
+function showResult(msg, type) {
+  const el = document.getElementById('result-msg');
+  el.textContent = msg;
+  el.className = 'result-msg ' + type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doReserve();
+});
+
+poll();
+setInterval(poll, 1500);
+</script>
+</body>
+</html>
