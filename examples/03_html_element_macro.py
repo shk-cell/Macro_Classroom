@@ -14,6 +14,8 @@ print()
 
 # ── Input ──
 server = input("Enter server address (e.g. http://192.168.0.1:3000): ").strip().rstrip('/')
+if server and not server.startswith('http'):
+    server = 'http://' + server
 if not server:
     print("Server address is required.")
     input("Press Enter to exit...")
