@@ -7,7 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans KR', sans-serif; background: #0a0a0f; color: #eee; min-height: 100vh; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: #0a0a0f; color: #eee; min-height: 100vh; cursor: default; user-select: none; }
+  input, button { user-select: auto; cursor: auto; }
 
   /* ── 상단 헤더 ── */
   .site-header {
@@ -332,13 +333,7 @@
 
 <!-- 헤더 -->
 <header class="site-header">
-  <div class="site-logo">TICKET<span>X</span></div>
-  <nav class="site-nav">
-    <a href="#">콘서트</a>
-    <a href="#">뮤지컬</a>
-    <a href="#">스포츠</a>
-    <a href="#">전시</a>
-  </nav>
+  <div class="site-logo">My Macro <span>Classroom</span></div>
 </header>
 
 <!-- 히어로 배너 -->
@@ -399,16 +394,6 @@
     <div id="reserved-items"></div>
   </div>
 
-  <!-- 힌트 박스 -->
-  <div class="hint-box">
-    <div class="hint-title">💡 매크로 도전 힌트</div>
-    <div class="hint-body">
-      예매는 두 단계로 이루어집니다.<br>
-      ① <code>GET /api/ticket</code> → <code>token</code> 값 획득<br>
-      ② <code>POST /api/reserve</code> → <code>{ "name": "이름", "token": "..." }</code> 전송<br><br>
-      현재 상태 확인: <code>GET /api/state</code>
-    </div>
-  </div>
 
 </section>
 
