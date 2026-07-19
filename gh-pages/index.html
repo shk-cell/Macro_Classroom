@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVA CONCERT - Ticket Booking</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #eee; min-height: 100vh; cursor: default; user-select: none; }
+  input, button { user-select: auto; cursor: auto; }
+
+  /* ── Header ── */
+  .site-header {
+    background: rgba(10,10,15,0.95);
+    border-bottom: 1px solid #222;
+    padding: 14px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .site-logo { font-size: 22px; font-weight: 900; letter-spacing: 4px; color: #fff; }
+  .site-logo span { color: #c678ff; }
+
+  /* ── Hero ── */
+  .hero {
+    position: relative; min-height: 380px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; padding: 60px 20px;
+  }
+  .hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 60% 40%, #3a0060 0%, #1a0030 40%, #0a0a0f 70%); }
+  .hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 70%, rgba(198,120,255,0.15) 0%, transparent 60%); }
+  .hero-content { position: relative; z-index: 1; text-align: center; max-width: 700px; }
+  .hero-badge {
+    display: inline-block; background: rgba(198,120,255,0.15);
+    border: 1px solid rgba(198,120,255,0.4); border-radius: 20px;
+    padding: 5px 18px; font-size: 12px; color: #c678ff;
+    letter-spacing: 2px; margin-bottom: 20px;
+  }
+  .hero-title {
+    font-size: clamp(42px, 8vw, 80px); font-weight: 900;
+    line-height: 1.1; letter-spacing: -1px; color: #fff;
+    text-shadow: 0 0 60px rgba(198,120,255,0.5);
+  }
+  .hero-title .accent { color: #c678ff; }
+  .hero-sub { margin-top: 16px; font-size: 16px; color: #aaa; line-height: 1.7; }
+  .hero-info { margin-top: 28px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+  .hero-info-item { text-align: center; }
+  .hero-info-label { font-size: 11px; color: #666; letter-spacing: 1px; margin-bottom: 4px; }
+  .hero-info-value { font-size: 15px; font-weight: 700; color: #fff; }
+
+  /* ── Reserve Section ── */
+  .reserve-section { max-width: 600px; margin: 0 auto; padding: 40px 20px 60px; }
+
+  /* ── Seats Board ── */
+  .seats-board {
+    background: #111118; border: 1px solid #2a2a3a;
+    border-radius: 16px; padding: 24px; margin-bottom: 28px;
+  }
+  .seats-board-title {
+    font-size: 13px; color: #888; letter-spacing: 1px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .seats-board-title::before {
+    content: ''; display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: #c678ff; box-shadow: 0 0 6px #c678ff;
+  }
+  .seats-grid {
+    display: grid; grid-template-columns: repeat(10, 1fr);
+    gap: 6px; margin-bottom: 16px;
+  }
+  .seat {
+    aspect-ratio: 1; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700;
+    transition: all 0.3s; border: 1px solid transparent;
+  }
+  .seat.empty { background: rgba(198,120,255,0.1); border-color: rgba(198,120,255,0.3); color: #c678ff; }
+  .seat.taken { background: rgba(255,255,255,0.05); border-color: #333; color: #555; }
+  .seats-count { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .seats-left { color: #c678ff; font-weight: 700; font-size: 16px; }
+  .seats-total { color: #555; }
+
+  /* ── Status Banner ── */
+  .status-banner {
+    border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;
+    text-align: center; font-weight: 700; font-size: 15px; transition: all 0.4s;
+  }
+  .status-banner.waiting { background: rgba(255,200,0,0.08); border: 1px solid rgba(255,200,0,0.25); color: #ffc800; }
+  .status-banner.open { background: rgba(198,120,255,0.1); border: 1px solid rgba(198,120,255,0.4); color: #c678ff; animation: pulse-border 2s infinite; }
+  .status-banner.closed { background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.25); color: #ff5050; }
+  @keyframes pulse-border { 0%, 100% { box-shadow: 0 0 0 0 rgba(198,120,255,0.3); } 50% { box-shadow: 0 0 0 6px rgba(198,120,255,0); } }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+  .status-banner.waiting .status-dot { background: #ffc800; }
+  .status-banner.open .status-dot { background: #c678ff; animation: blink 1s infinite; }
+  .status-banner.closed .status-dot { background: #ff5050; }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  /* ── Reserve Form ── */
+  .reserve-form { background: #111118; border: 1px solid #2a2a3a; border-radius: 16px; padding: 28px 24px; }
+  .reserve-form.disabled { opacity: 0.5; pointer-events: none; }
+  .form-label { font-size: 12px; color: #888; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+  .form-input {
+    width: 100%; background: #0a0a0f; border: 1px solid #333;
+    border-radius: 10px; padding: 14px 16px; font-size: 16px;
+    color: #fff; font-family: inherit; outline: none;
+    transition: border-color 0.2s; margin-bottom: 16px;
+  }
+  .form-input:focus { border-color: #c678ff; }
+  .form-input::placeholder { color: #444; }
+  .reserve-btn {
+    width: 100%; background: linear-gradient(135deg, #8b3fff, #c678ff);
+    border: none; border-radius: 10px; padding: 16px;
+    font-size: 16px; font-weight: 700; color: #fff;
+    cursor: pointer; font-family: inherit; transition: all 0.2s; letter-spacing: 1px;
+  }
+  .reserve-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(198,120,255,0.35); }
+  .reserve-btn:active { transform: translateY(0); }
+  .reserve-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ── Result Message ── */
+  .result-msg {
+    margin-top: 16px; border-radius: 10px; padding: 16px;
+    font-size: 14px; font-weight: 700; text-align: center;
+    display: none; line-height: 1.6;
+  }
+  .result-msg.success { background: rgba(100,255,150,0.1); border: 1px solid rgba(100,255,150,0.3); color: #64ff96; }
+  .result-msg.error { background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.3); color: #ff5050; }
+
+  /* ── Leaderboard ── */
+  .leaderboard { margin-top: 32px; }
+  .leaderboard-title { font-size: 13px; color: #888; letter-spacing: 1px; margin-bottom: 12px; text-align: center; }
+  .leaderboard-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; background: rgba(255,255,255,0.03);
+    border-radius: 8px; margin-bottom: 6px; animation: fadeIn 0.3s ease;
+  }
+  .leaderboard-item.rank-1 { background: rgba(255,200,0,0.08); border: 1px solid rgba(255,200,0,0.2); }
+  .leaderboard-item.rank-2 { background: rgba(180,180,180,0.06); border: 1px solid rgba(180,180,180,0.15); }
+  .leaderboard-item.rank-3 { background: rgba(180,100,40,0.08); border: 1px solid rgba(180,100,40,0.2); }
+  .lb-rank { width: 28px; height: 28px; border-radius: 6px; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #555; }
+  .rank-1 .lb-rank { color: #ffc800; }
+  .rank-2 .lb-rank { color: #bbb; }
+  .rank-3 .lb-rank { color: #cd7f32; }
+  .lb-name { font-size: 14px; font-weight: 600; flex: 1; }
+  .lb-count { font-size: 20px; font-weight: 900; color: #c678ff; min-width: 40px; text-align: right; }
+  .lb-count span { font-size: 11px; font-weight: 400; color: #555; margin-left: 2px; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform: none; } }
+
+  /* ── Admin FAB ── */
+  .admin-fab {
+    position: fixed; bottom: 28px; right: 28px;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,0.06); border: 1px solid #333;
+    color: #555; font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; z-index: 200;
+  }
+  .admin-fab:hover { background: rgba(255,255,255,0.1); color: #aaa; }
+
+  /* ── Admin Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 300; display: none; backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: block; }
+  .modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #111118; border: 1px solid #2a2a3a; border-radius: 20px;
+    padding: 32px; width: 320px; z-index: 400; display: none;
+  }
+  .modal.show { display: block; }
+  .modal-title { font-size: 16px; font-weight: 900; letter-spacing: 2px; color: #c678ff; margin-bottom: 24px; text-align: center; }
+  .modal-input {
+    width: 100%; background: #0a0a0f; border: 1px solid #333;
+    border-radius: 10px; padding: 12px 16px; font-size: 14px;
+    color: #fff; font-family: inherit; outline: none;
+    transition: border-color 0.2s; margin-bottom: 16px;
+  }
+  .modal-input:focus { border-color: #c678ff; }
+  .modal-input::placeholder { color: #444; }
+  .modal-btns { display: flex; flex-direction: column; gap: 8px; }
+  .modal-btn {
+    width: 100%; border: none; border-radius: 10px; padding: 13px;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .modal-btn-open { background: rgba(100,255,150,0.1); border: 1px solid rgba(100,255,150,0.3); color: #64ff96; }
+  .modal-btn-close { background: rgba(255,200,0,0.1); border: 1px solid rgba(255,200,0,0.3); color: #ffc800; }
+  .modal-btn-reset { background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.3); color: #ff5050; }
+  .modal-btn-cancel { background: rgba(255,255,255,0.04); border: 1px solid #333; color: #555; margin-top: 8px; }
+  .modal-btn:hover { opacity: 0.8; }
+
+  /* ── Footer ── */
+  .site-footer { border-top: 1px solid #1a1a22; padding: 24px 40px; text-align: center; font-size: 12px; color: #444; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="site-logo">My Macro <span>Classroom</span></div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge">★ 2026 SPECIAL CONCERT ★</div>
+    <div class="hero-title">NOVA<br><span class="accent">ECLIPSE</span> TOUR</div>
+    <div class="hero-sub">100 seats only — First come, first served<br>The best show of the year. Don't miss it.</div>
+    <div class="hero-info">
+      <div class="hero-info-item">
+        <div class="hero-info-label">DATE</div>
+        <div class="hero-info-value">2026.09.13 SAT</div>
+      </div>
+      <div class="hero-info-item">
+        <div class="hero-info-label">VENUE</div>
+        <div class="hero-info-value">Olympic Park Arena</div>
+      </div>
+      <div class="hero-info-item">
+        <div class="hero-info-label">SEATS</div>
+        <div class="hero-info-value">Left <span id="hero-left">-</span> / 100</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Reserve Section -->
+<section class="reserve-section">
+
+  <!-- Seats Board -->
+  <div class="seats-board">
+    <div class="seats-board-title">Live Seat Status</div>
+    <div class="seats-grid" id="seats-grid"></div>
+    <div class="seats-count">
+      <span>Seats left: <span class="seats-left" id="seats-left">-</span></span>
+      <span class="seats-total">Total 100 seats</span>
+    </div>
+  </div>
+
+  <!-- Status Banner -->
+  <div class="status-banner waiting" id="status-banner">
+    <span class="status-dot"></span>
+    <span id="status-text">Booking is not open yet. Please wait.</span>
+  </div>
+
+  <!-- Reserve Form -->
+  <div class="reserve-form disabled" id="reserve-form">
+    <label class="form-label" for="name-input">YOUR NAME</label>
+    <input class="form-input" id="name-input" type="text" placeholder="Enter your name" maxlength="20">
+    <button class="reserve-btn" id="reserve-btn" onclick="doReserve()">Book Now</button>
+    <div class="result-msg" id="result-msg"></div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="leaderboard" id="leaderboard" style="display:none;">
+    <div class="leaderboard-title">🏆 Leaderboard</div>
+    <div id="leaderboard-items"></div>
+  </div>
+
+</section>
+
+<!-- Footer -->
+<footer class="site-footer">
+  © 2026 TICKETX Corp. All rights reserved.
+</footer>
+
+<!-- Admin FAB -->
+<button class="admin-fab" onclick="openAdminModal()" title="Admin">⚙</button>
+
+<!-- Admin Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeAdminModal()"></div>
+<div class="modal" id="admin-modal">
+  <div class="modal-title">ADMIN PANEL</div>
+  <input class="modal-input" id="admin-password" type="password" placeholder="Enter admin password">
+  <div class="modal-btns">
+    <button class="modal-btn modal-btn-open" onclick="adminAction('open')">▶ Open Booking</button>
+    <button class="modal-btn modal-btn-close" onclick="adminAction('close')">■ Close Booking</button>
+    <button class="modal-btn modal-btn-reset" onclick="adminAction('reset')">⟳ Reset All Reservations</button>
+    <button class="modal-btn modal-btn-cancel" onclick="closeAdminModal()">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ── Firebase Config ──────────────────────────────
+// Replace with your own Firebase project config
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+// ─────────────────────────────────────────────────
+
+const TOTAL_SEATS = 100;
+const ADMIN_PASSWORD = 'jungboman';
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let currentIsOpen = false;
+let reserving = false;
+
+// ── Real-time listener ──
+db.ref('/').on('value', snapshot => {
+  const data = snapshot.val() || {};
+  const state = data.state || { is_open: false };
+  const reservations = Object.values(data.reservations || {});
+
+  currentIsOpen = !!state.is_open;
+  updateStatus(state, reservations.length);
+  renderSeats(reservations);
+  renderLeaderboard(reservations);
+});
+
+function updateStatus(state, count) {
+  const banner = document.getElementById('status-banner');
+  const text = document.getElementById('status-text');
+  const form = document.getElementById('reserve-form');
+  const seatsLeft = TOTAL_SEATS - count;
+
+  document.getElementById('seats-left').textContent = seatsLeft;
+  document.getElementById('hero-left').textContent = seatsLeft;
+
+  if (seatsLeft <= 0) {
+    banner.className = 'status-banner closed';
+    text.textContent = 'Booking is closed. All seats are taken.';
+    form.classList.add('disabled');
+  } else if (state.is_open) {
+    banner.className = 'status-banner open';
+    text.textContent = '🎟 Booking is open! Reserve your seat now.';
+    form.classList.remove('disabled');
+  } else {
+    banner.className = 'status-banner waiting';
+    text.textContent = 'Booking is not open yet. Please wait.';
+    form.classList.add('disabled');
+  }
+}
+
+function renderSeats(reservations) {
+  const grid = document.getElementById('seats-grid');
+  grid.innerHTML = '';
+  const takenSeats = new Set(reservations.map(r => r.seat_number));
+  for (let i = 1; i <= TOTAL_SEATS; i++) {
+    const div = document.createElement('div');
+    div.className = 'seat ' + (takenSeats.has(i) ? 'taken' : 'empty');
+    div.innerHTML = takenSeats.has(i) ? '✓' : i;
+    grid.appendChild(div);
+  }
+}
+
+function renderLeaderboard(reservations) {
+  const el = document.getElementById('leaderboard');
+  const itemsEl = document.getElementById('leaderboard-items');
+  if (reservations.length === 0) { el.style.display = 'none'; return; }
+
+  const counts = {};
+  reservations.forEach(r => { counts[r.name] = (counts[r.name] || 0) + 1; });
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const medals = ['🥇', '🥈', '🥉'];
+
+  itemsEl.innerHTML = sorted.map(([name, count], i) => `
+    <div class="leaderboard-item ${i < 3 ? 'rank-' + (i+1) : ''}">
+      <div class="lb-rank">${medals[i] || (i + 1)}</div>
+      <div class="lb-name">${name}</div>
+      <div class="lb-count">${count}<span> seats</span></div>
+    </div>
+  `).join('');
+  el.style.display = 'block';
+}
+
+async function doReserve() {
+  if (reserving || !currentIsOpen) return;
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) { showResult('Please enter your name.', 'error'); return; }
+
+  reserving = true;
+  const btn = document.getElementById('reserve-btn');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+
+  try {
+    const countRef = db.ref('seat_count');
+    let seatNumber = null;
+
+    await countRef.transaction(current => {
+      const c = current || 0;
+      if (c >= TOTAL_SEATS) return; // abort
+      seatNumber = c + 1;
+      return seatNumber;
+    });
+
+    if (!seatNumber) {
+      showResult('Sorry, all seats are taken!', 'error');
+      return;
+    }
+
+    await db.ref('reservations').push({
+      name,
+      seat_number: seatNumber,
+      reserved_at: new Date().toISOString()
+    });
+
+    showResult(`Seat #${seatNumber} booked successfully!`, 'success');
+    document.getElementById('name-input').value = '';
+
+    if (seatNumber >= TOTAL_SEATS) {
+      db.ref('state/is_open').set(false);
+    }
+  } catch (e) {
+    showResult('Network error. Please try again.', 'error');
+  } finally {
+    reserving = false;
+    btn.disabled = false;
+    btn.textContent = 'Book Now';
+  }
+}
+
+function showResult(msg, type) {
+  const el = document.getElementById('result-msg');
+  el.textContent = msg;
+  el.className = 'result-msg ' + type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+// ── Admin ──
+function openAdminModal() {
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('admin-modal').classList.add('show');
+  document.getElementById('admin-password').value = '';
+  setTimeout(() => document.getElementById('admin-password').focus(), 100);
+}
+
+function closeAdminModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  document.getElementById('admin-modal').classList.remove('show');
+}
+
+function adminAction(action) {
+  const pwd = document.getElementById('admin-password').value;
+  if (pwd !== ADMIN_PASSWORD) {
+    document.getElementById('admin-password').style.borderColor = '#ff5050';
+    setTimeout(() => document.getElementById('admin-password').style.borderColor = '', 1000);
+    return;
+  }
+
+  if (action === 'open') {
+    db.ref('state/is_open').set(true);
+    closeAdminModal();
+  } else if (action === 'close') {
+    db.ref('state/is_open').set(false);
+    closeAdminModal();
+  } else if (action === 'reset') {
+    if (!confirm('Reset all reservations? This cannot be undone.')) return;
+    db.ref('reservations').remove();
+    db.ref('seat_count').set(0);
+    db.ref('state/is_open').set(false);
+    closeAdminModal();
+    showResult('All reservations have been reset.', 'success');
+  }
+}
+
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doReserve();
+});
+
+document.getElementById('admin-password').addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAdminModal();
+});
+</script>
+</body>
+</html>

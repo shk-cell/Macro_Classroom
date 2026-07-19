@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>매크로실습실</title>
+<title>Macro Classroom</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Malgun Gothic', sans-serif;
+    font-family: 'Segoe UI', sans-serif;
     background: #0f1117; color: #e0e0e0;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
@@ -64,27 +64,27 @@
 </head>
 <body>
 <div class="logo">MACRO CLASSROOM</div>
-<div class="sub">매크로 수업 · 콘서트 예약 시스템</div>
+<div class="sub">Macro Classroom · Concert Booking System</div>
 
 <div class="status-box">
-  <div class="status-label">서버 상태</div>
-  <div class="status-value stopped" id="status">● 정지됨</div>
+  <div class="status-label">SERVER STATUS</div>
+  <div class="status-value stopped" id="status">● Stopped</div>
 </div>
 
 <div class="ip-box">
-  <div class="ip-label">접속 주소 (학생 공유용)</div>
+  <div class="ip-label">ACCESS URL (share with students)</div>
   <div class="ip-value" id="ip-value">-</div>
-  <div class="ip-hint">학생들은 브라우저에서 위 주소:3000 으로 접속</div>
+  <div class="ip-hint">Students open this address in their browser</div>
 </div>
 
 <div class="btns">
-  <button class="btn btn-start" id="btn-start" onclick="startServer()">▶ 서버 시작</button>
-  <button class="btn btn-stop" id="btn-stop" onclick="stopServer()" disabled>■ 서버 중지</button>
-  <button class="btn btn-student" id="btn-student" onclick="openStudent()" disabled>🎟 학생 페이지</button>
-  <button class="btn btn-admin" id="btn-admin" onclick="openAdmin()" disabled>⚙ 관리자 페이지</button>
+  <button class="btn btn-start" id="btn-start" onclick="startServer()">▶ Start Server</button>
+  <button class="btn btn-stop" id="btn-stop" onclick="stopServer()" disabled>■ Stop Server</button>
+  <button class="btn btn-student" id="btn-student" onclick="openStudent()" disabled>🎟 Student Page</button>
+  <button class="btn btn-admin" id="btn-admin" onclick="openAdmin()" disabled>⚙ Admin Page</button>
 </div>
 
-<div class="log" id="log">대기 중...</div>
+<div class="log" id="log">Waiting...</div>
 
 <script>
 const { ipcRenderer } = require('electron');
@@ -97,35 +97,35 @@ function log(msg) {
 
 async function startServer() {
   document.getElementById('btn-start').disabled = true;
-  log('서버 시작 중...');
+  log('Starting server...');
   const result = await ipcRenderer.invoke('start-server');
   if (result.success) {
     serverIp = result.ip;
     document.getElementById('ip-value').textContent = `http://${serverIp}:3000`;
-    document.getElementById('status').textContent = '● 실행 중';
+    document.getElementById('status').textContent = '● Running';
     document.getElementById('status').className = 'status-value running';
     document.getElementById('btn-stop').disabled = false;
     document.getElementById('btn-student').disabled = false;
     document.getElementById('btn-admin').disabled = false;
-    log(`서버 시작 완료 → http://${serverIp}:3000`);
+    log(`Server started → http://${serverIp}:3000`);
   } else {
     document.getElementById('btn-start').disabled = false;
-    log('오류: ' + result.error);
+    log('Error: ' + result.error);
   }
 }
 
 async function stopServer() {
-  log('서버 중지 중...');
+  log('Stopping server...');
   await ipcRenderer.invoke('stop-server');
   serverIp = '';
   document.getElementById('ip-value').textContent = '-';
-  document.getElementById('status').textContent = '● 정지됨';
+  document.getElementById('status').textContent = '● Stopped';
   document.getElementById('status').className = 'status-value stopped';
   document.getElementById('btn-start').disabled = false;
   document.getElementById('btn-stop').disabled = true;
   document.getElementById('btn-student').disabled = true;
   document.getElementById('btn-admin').disabled = true;
-  log('서버 중지됨.');
+  log('Server stopped.');
 }
 
 function openStudent() { ipcRenderer.send('open-browser', serverIp); }
