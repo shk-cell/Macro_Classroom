@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const app = express();
 const PORT = 3000;
 const ADMIN_PASSWORD = 'jungboman';
-const TOTAL_SEATS = 10;
+const TOTAL_SEATS = 100;
 const TOKEN_TTL = 60000; // 60초
 
 // 토큰 저장소 (in-memory, 단일 사용)
@@ -99,10 +99,6 @@ app.post('/api/reserve', (req, res) => {
     return res.status(400).json({ error: '토큰이 만료되었습니다. 다시 시도하세요.' });
   }
   tokens.delete(token);
-
-  // 중복 이름 체크
-  const existing = dbGet('SELECT id FROM reservations WHERE name=?', [name.trim()]);
-  if (existing) return res.status(409).json({ error: '이미 예약된 이름입니다.' });
 
   // 좌석 체크
   const count = dbGet('SELECT COUNT(*) as c FROM reservations').c;
