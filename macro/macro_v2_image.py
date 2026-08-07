@@ -13,17 +13,24 @@ BASE_SIZE = 28
 BG_COLOR     = (10, 26, 10)
 BORDER_COLOR = (0, 204, 51)
 
+# 스크립트 파일 기준 절대 경로
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+IMAGES_DIR = os.path.join(SCRIPT_DIR, "images")
+
 def generate_images():
     """CSS 색상 그대로 DPI별 이미지 생성"""
-    os.makedirs("images", exist_ok=True)
+    os.makedirs(IMAGES_DIR, exist_ok=True)
     scales = {"100": 1.0, "125": 1.25, "150": 1.5}
     for label, scale in scales.items():
         size = round(BASE_SIZE * scale)
         img  = Image.new("RGB", (size, size), BG_COLOR)
         draw = ImageDraw.Draw(img)
         draw.rectangle([0, 0, size-1, size-1], outline=BORDER_COLOR, width=1)
-        img.save(f"images/empty_seat_{label}.png")
-    shutil.copy("images/empty_seat_100.png", "images/empty_seat.png")
+        img.save(os.path.join(IMAGES_DIR, f"empty_seat_{label}.png"))
+    shutil.copy(
+        os.path.join(IMAGES_DIR, "empty_seat_100.png"),
+        os.path.join(IMAGES_DIR, "empty_seat.png")
+    )
 
 def run(name, image_path, confidence, delay, log, stop_event):
     log(f"Starting in 3 seconds. Switch to browser!")
@@ -72,7 +79,7 @@ class App:
         self._label("Reference Image")
         f = tk.Frame(root, bg="#1a1a1a")
         f.pack(fill="x", padx=14, pady=(0, 2))
-        self.img_var = tk.StringVar(value="images/empty_seat.png")
+        self.img_var = tk.StringVar(value=os.path.join(IMAGES_DIR, "empty_seat.png"))
         tk.Entry(f, textvariable=self.img_var, bg="#0d0d0d", fg="#00ff41",
                  insertbackground="#00ff41", font=("Consolas", 10),
                  relief="flat", bd=4).pack(side="left", fill="x", expand=True)
@@ -112,7 +119,7 @@ class App:
 
     def _gen(self, scale):
         generate_images()
-        path = f"images/empty_seat_{scale}.png"
+        path = os.path.join(IMAGES_DIR, f"empty_seat_{scale}.png")
         self.img_var.set(path)
         self.log(f"Generated & selected: {path}")
 
