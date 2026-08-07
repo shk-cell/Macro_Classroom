@@ -16,16 +16,16 @@ def run(name, coords_text, delay, log, stop_event):
             continue
 
     if not coords:
-        log("좌표를 입력해주세요.")
+        log("No coordinates entered.")
         return
 
-    log(f"3초 후 시작합니다. 브라우저로 이동하세요!")
+    log(f"Starting in 3 seconds. Switch to browser!")
     time.sleep(3)
-    log(f"총 {len(coords)}개 좌표 클릭 시작")
+    log(f"Clicking {len(coords)} coordinates...")
 
     for i, (x, y) in enumerate(coords):
         if stop_event.is_set():
-            log("중지됨.")
+            log("Stopped.")
             return
         pyautogui.click(x, y)
         time.sleep(0.5)
@@ -33,36 +33,35 @@ def run(name, coords_text, delay, log, stop_event):
         pyautogui.hotkey("ctrl", "v")
         time.sleep(0.15)
         pyautogui.press("enter")
-        log(f"[{i+1}/{len(coords)}] ({x}, {y}) 완료")
+        log(f"[{i+1}/{len(coords)}] ({x}, {y}) done")
         time.sleep(float(delay))
 
-    log("완료!")
+    log("Finished!")
 
 
 class App:
     def __init__(self, root):
         self.root = root
         self.stop_event = threading.Event()
-        root.title("V1 — 고정 좌표 매크로")
+        root.title("V1 - Fixed Coordinate Macro")
         root.geometry("420x560")
         root.resizable(False, False)
         root.configure(bg="#1a1a1a")
 
-        self._label("이름")
-        self.name = self._entry("내이름")
+        self._label("Name")
+        self.name = self._entry("YourName")
 
-        self._label("딜레이 (초)")
+        self._label("Delay (seconds)")
         self.delay = self._entry("0.5")
 
-        self._label("좌표 목록 (x,y 한 줄씩)")
+        self._label("Coordinates (x,y one per line)")
         self.coords = tk.Text(root, height=8, bg="#0d0d0d", fg="#00ff41",
                               font=("Consolas", 10), relief="flat", bd=4,
                               insertbackground="#00ff41")
         self.coords.insert("end", "300,250\n330,250\n360,250")
         self.coords.pack(fill="x", padx=14, pady=(0, 10))
 
-        # 좌표 도우미 안내
-        tk.Label(root, text="※ 좌표 확인: get_coordinates.py 실행 후 마우스 올리기",
+        tk.Label(root, text="* Run get_coordinates.py to find coordinates",
                  bg="#1a1a1a", fg="#555", font=("Consolas", 8)).pack()
 
         self._btn_row()
@@ -116,7 +115,7 @@ class App:
 
     def _stop(self):
         self.stop_event.set()
-        self.log("중지 요청됨.")
+        self.log("Stop requested.")
 
 
 if __name__ == "__main__":

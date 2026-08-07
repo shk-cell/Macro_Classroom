@@ -1,6 +1,6 @@
 @echo off
-echo 패키지 설치 중...
+echo Installing packages...
 pip install selenium pyautogui pyperclip opencv-python
 echo.
-echo 설치 완료!
+echo Done!
 pause

@@ -8,17 +8,17 @@ from selenium.webdriver.common.by import By
 SITE_URL = "https://shk-cell.github.io/Macro_Classroom/"
 
 def run(name, delay, log, stop_event):
-    log("브라우저 실행 중...")
+    log("Launching browser...")
     driver = webdriver.Chrome()
     driver.get(SITE_URL)
     time.sleep(2)
-    log("사이트 접속 완료. 빈 좌석 탐색 시작!")
+    log("Connected. Searching for empty seats!")
     count = 0
 
     while not stop_event.is_set():
         seats = driver.find_elements(By.CSS_SELECTOR, ".seat:not(.claimed):not(.inactive)")
         if not seats:
-            log("빈 좌석 없음. 종료.")
+            log("No empty seats found. Stopping.")
             break
 
         seat = random.choice(seats)
@@ -33,33 +33,33 @@ def run(name, delay, log, stop_event):
             """, name)
             if result:
                 count += 1
-                log(f"[{count}번째] 점유 완료!")
+                log(f"[{count}] Claimed!")
         except:
             pass
 
         time.sleep(float(delay))
 
     driver.quit()
-    log(f"완료! 총 {count}개 점유")
+    log(f"Finished! Total: {count}")
 
 
 class App:
     def __init__(self, root):
         self.root = root
         self.stop_event = threading.Event()
-        root.title("V3 — 태그 기반 매크로 (Selenium)")
+        root.title("V3 - Tag-Based Macro (Selenium)")
         root.geometry("420x400")
         root.resizable(False, False)
         root.configure(bg="#1a1a1a")
 
-        self._label("이름")
-        self.name = self._entry("내이름")
+        self._label("Name")
+        self.name = self._entry("YourName")
 
-        self._label("딜레이 (초)")
+        self._label("Delay (seconds)")
         self.delay = self._entry("0.3")
 
         tk.Label(root,
-                 text="HTML 태그를 분석해 빈 좌석을 자동으로 찾아 클릭합니다.\nSelenium이 브라우저를 직접 제어합니다.",
+                 text="Finds empty seats by analyzing HTML tags.\nSelenium controls the browser directly.",
                  bg="#1a1a1a", fg="#555", font=("Consolas", 9), justify="left"
                  ).pack(anchor="w", padx=14, pady=(4, 0))
 
@@ -113,7 +113,7 @@ class App:
 
     def _stop(self):
         self.stop_event.set()
-        self.log("중지 요청됨.")
+        self.log("Stop requested.")
 
 
 if __name__ == "__main__":

@@ -8,20 +8,20 @@ import pyperclip
 SITE_URL = "https://shk-cell.github.io/Macro_Classroom/"
 
 def run(name, image_path, confidence, delay, log, stop_event):
-    log(f"3초 후 시작합니다. 브라우저로 이동하세요!")
+    log(f"Starting in 3 seconds. Switch to browser!")
     time.sleep(3)
-    log(f"이미지 인식 시작: {image_path}")
+    log(f"Image recognition started: {image_path}")
     count = 0
 
     while not stop_event.is_set():
         try:
             location = pyautogui.locateOnScreen(image_path, confidence=float(confidence))
         except Exception as e:
-            log(f"오류: {e}")
+            log(f"Error: {e}")
             break
 
         if location is None:
-            log("이미지를 찾을 수 없습니다. 종료.")
+            log("Image not found. Stopping.")
             break
 
         center = pyautogui.center(location)
@@ -32,42 +32,42 @@ def run(name, image_path, confidence, delay, log, stop_event):
         time.sleep(0.15)
         pyautogui.press("enter")
         count += 1
-        log(f"[{count}번째] 점유 완료! 위치: {center}")
+        log(f"[{count}] Claimed! Position: {center}")
         time.sleep(float(delay))
 
-    log(f"완료! 총 {count}개")
+    log(f"Finished! Total: {count}")
 
 
 class App:
     def __init__(self, root):
         self.root = root
         self.stop_event = threading.Event()
-        root.title("V2 — 이미지 인식 매크로")
+        root.title("V2 - Image Recognition Macro")
         root.geometry("420x480")
         root.resizable(False, False)
         root.configure(bg="#1a1a1a")
 
-        self._label("이름")
-        self.name = self._entry("내이름")
+        self._label("Name")
+        self.name = self._entry("YourName")
 
-        self._label("이미지 경로")
+        self._label("Image Path")
         f = tk.Frame(root, bg="#1a1a1a")
         f.pack(fill="x", padx=14, pady=(0, 4))
         self.img_var = tk.StringVar(value="images/empty_seat.png")
         tk.Entry(f, textvariable=self.img_var, bg="#0d0d0d", fg="#00ff41",
                  insertbackground="#00ff41", font=("Consolas", 10),
                  relief="flat", bd=4).pack(side="left", fill="x", expand=True)
-        tk.Button(f, text="찾기", command=self._browse,
+        tk.Button(f, text="Browse", command=self._browse,
                   bg="#2a2a2a", fg="#00ff41", font=("Consolas", 9),
                   relief="flat", padx=8, cursor="hand2").pack(side="left", padx=(6, 0))
 
-        tk.Label(root, text="※ 빈 좌석 이미지를 미리 캡처해서 저장하세요",
+        tk.Label(root, text="* Capture an empty seat screenshot and save it first",
                  bg="#1a1a1a", fg="#555", font=("Consolas", 8)).pack()
 
-        self._label("유사도 (0.0 ~ 1.0)")
+        self._label("Confidence (0.0 ~ 1.0)")
         self.conf = self._entry("0.8")
 
-        self._label("딜레이 (초)")
+        self._label("Delay (seconds)")
         self.delay = self._entry("0.4")
 
         self._btn_row()
@@ -85,7 +85,7 @@ class App:
         return v
 
     def _browse(self):
-        path = filedialog.askopenfilename(filetypes=[("이미지", "*.png *.jpg")])
+        path = filedialog.askopenfilename(filetypes=[("Image", "*.png *.jpg")])
         if path:
             self.img_var.set(path)
 
@@ -127,7 +127,7 @@ class App:
 
     def _stop(self):
         self.stop_event.set()
-        self.log("중지 요청됨.")
+        self.log("Stop requested.")
 
 
 if __name__ == "__main__":
