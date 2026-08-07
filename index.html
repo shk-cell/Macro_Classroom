@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TKD 10000 Seats</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    :root {
+      --green:      #00ff41;
+      --green-dim:  #00b32d;
+      --green-dark: #003b00;
+      --green-glow: rgba(0,255,65,0.4);
+      --bg:         #000000;
+      --bg2:        #0a0a0a;
+      --bg3:        #0d1a0d;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--green);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    header, .main { position: relative; z-index: 1; }
+
+    header {
+      background: rgba(0,0,0,0.92);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--green);
+      box-shadow: 0 0 20px var(--green-glow), inset 0 -1px 0 var(--green);
+    }
+
+    header h1 {
+      font-family: 'VT323', monospace;
+      font-size: 2rem;
+      color: var(--green);
+      letter-spacing: 4px;
+      text-shadow: 0 0 10px var(--green), 0 0 30px var(--green-glow);
+      text-transform: uppercase;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* 상태 뱃지 + 버튼 공통 크기 */
+    .status-badge,
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 110px;
+      height: 40px;
+      font-family: 'VT323', monospace;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: 1px solid currentColor;
+    }
+
+    .status-badge {
+      pointer-events: none;
+    }
+    .status-badge.active {
+      color: var(--green);
+      border-color: var(--green);
+      box-shadow: 0 0 10px var(--green-glow), inset 0 0 10px rgba(0,255,65,0.1);
+      text-shadow: 0 0 8px var(--green);
+      animation: blink-badge 1.5s infinite;
+    }
+    .status-badge.inactive {
+      color: #1a4d1a;
+      border-color: #1a4d1a;
+    }
+    @keyframes blink-badge {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.6; }
+    }
+
+    .btn {
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .btn:hover::before { opacity: 1; }
+    .btn:hover { color: #000; text-shadow: none; }
+    .btn span { position: relative; z-index: 1; }
+
+    .btn-start { color: var(--green); border-color: var(--green); }
+    .btn-start::before { background: var(--green); }
+    .btn-start:hover { box-shadow: 0 0 15px var(--green-glow); }
+
+    .btn-stop { color: #aaff00; border-color: #aaff00; }
+    .btn-stop::before { background: #aaff00; }
+    .btn-stop:hover { box-shadow: 0 0 15px rgba(170,255,0,0.5); }
+
+    .btn-reset { color: #ff0040; border-color: #ff0040; }
+    .btn-reset::before { background: #ff0040; }
+    .btn-reset:hover { box-shadow: 0 0 15px rgba(255,0,64,0.5); }
+
+    .main {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      align-items: flex-start;
+    }
+
+    .grid-wrap { flex: 1; }
+
+    .grid-info {
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+      color: var(--green-dim);
+      letter-spacing: 1px;
+    }
+    .grid-info span { color: var(--green); text-shadow: 0 0 6px var(--green); }
+
+    .grid-scroll {
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .grid-scroll::-webkit-scrollbar { width: 4px; }
+    .grid-scroll::-webkit-scrollbar-track { background: #000; }
+    .grid-scroll::-webkit-scrollbar-thumb { background: var(--green-dim); border-radius: 2px; }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(25, 28px);
+      gap: 3px;
+    }
+
+    .seat {
+      width: 28px;
+      height: 28px;
+      background: #0a1a0a;
+      border: 1px solid #00cc33;
+      cursor: pointer;
+      transition: all 0.1s;
+      position: relative;
+    }
+    .seat:hover:not(.claimed):not(.inactive) {
+      background: #00ff41;
+      border-color: #00ff41;
+      box-shadow: 0 0 8px #00ff41;
+      z-index: 2;
+      transform: scale(1.35);
+    }
+    .seat.claimed {
+      cursor: default;
+      border-color: transparent;
+    }
+    .seat.claimed:hover {
+      transform: scale(1.35);
+      z-index: 2;
+      box-shadow: 0 0 8px rgba(255,255,255,0.4);
+    }
+    .seat.inactive {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+    .seat.inactive:hover { transform: none; box-shadow: none; }
+
+    /* Leaderboard */
+    .leaderboard {
+      width: 210px;
+      min-width: 190px;
+      background: rgba(0,0,0,0.9);
+      border: 1px solid var(--green);
+      box-shadow: 0 0 20px var(--green-glow), inset 0 0 20px rgba(0,255,65,0.03);
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 90px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lb-header {
+      background: var(--green-dark);
+      padding: 12px;
+      text-align: center;
+      font-family: 'VT323', monospace;
+      font-size: 1.4rem;
+      color: var(--green);
+      letter-spacing: 4px;
+      border-bottom: 1px solid var(--green);
+      text-shadow: 0 0 10px var(--green);
+    }
+
+    .lb-stats {
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--green-dim);
+      border-bottom: 1px solid #0a2a0a;
+      letter-spacing: 1px;
+    }
+    .lb-stats .highlight { color: var(--green); text-shadow: 0 0 6px var(--green); }
+
+    #lb-list { overflow-y: auto; flex: 1; padding: 4px 0; }
+    #lb-list::-webkit-scrollbar { width: 3px; }
+    #lb-list::-webkit-scrollbar-track { background: #000; }
+    #lb-list::-webkit-scrollbar-thumb { background: var(--green-dim); }
+
+    .lb-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-bottom: 1px solid #0a1a0a;
+      transition: background 0.1s;
+      font-size: 0.78rem;
+      letter-spacing: 0.5px;
+    }
+    .lb-item:hover { background: rgba(0,255,65,0.05); }
+
+    .lb-rank {
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      color: #1a5c1a;
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .lb-rank.gold   { color: #ffd700; text-shadow: 0 0 6px rgba(255,215,0,0.6); }
+    .lb-rank.silver { color: #c0c0c0; }
+    .lb-rank.bronze { color: #cd7f32; }
+
+    .lb-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 4px currentColor;
+    }
+
+    .lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--green); }
+    .lb-count { font-family: 'VT323', monospace; font-size: 1rem; color: var(--green); flex-shrink: 0; text-shadow: 0 0 6px var(--green); }
+
+    /* Modals */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: #000;
+      border: 1px solid var(--green);
+      padding: 30px;
+      width: 340px;
+      max-width: 90vw;
+      box-shadow: 0 0 40px var(--green-glow), inset 0 0 40px rgba(0,255,65,0.03);
+      animation: popIn 0.15s ease;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.9) translateY(-10px); opacity: 0; }
+      to   { transform: scale(1) translateY(0);       opacity: 1; }
+    }
+
+    .modal h2 {
+      margin-bottom: 18px;
+      font-family: 'VT323', monospace;
+      font-size: 1.5rem;
+      color: var(--green);
+      text-align: center;
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--green);
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #050f05;
+      border: 1px solid var(--green-dim);
+      color: var(--green);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1rem;
+      margin-bottom: 8px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      letter-spacing: 2px;
+    }
+    .modal input::placeholder { color: #1a5c1a; }
+    .modal input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 10px var(--green-glow);
+    }
+
+    .modal-error {
+      color: #ff0040;
+      font-size: 0.8rem;
+      min-height: 18px;
+      margin-bottom: 10px;
+      text-align: center;
+      text-shadow: 0 0 6px rgba(255,0,64,0.6);
+      letter-spacing: 1px;
+    }
+
+    .modal-btns { display: flex; gap: 10px; margin-top: 4px; }
+    .modal-btns .btn { flex: 1; padding: 10px; font-size: 1.1rem; }
+    .btn-confirm { border-color: var(--green); color: var(--green); }
+    .btn-cancel  { border-color: #1a5c1a; color: #1a5c1a; }
+    .btn-cancel:hover { color: #000; border-color: #1a5c1a; box-shadow: none; }
+    .btn-cancel:hover::before { background: #1a5c1a; opacity: 1; }
+
+
+    /* Scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    @media (max-width: 900px) {
+      .main { flex-direction: column; padding: 8px; }
+      .leaderboard { width: 100%; position: static; max-height: 280px; }
+      #grid { grid-template-columns: repeat(10, 28px); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>TKD 10000 Seats</h1>
+  <div class="header-controls">
+    <div id="status-badge" class="status-badge inactive">Stopped</div>
+    <button class="btn btn-start" onclick="askPassword('start')"><span>Start</span></button>
+    <button class="btn btn-stop"  onclick="askPassword('stop')"><span>Stop</span></button>
+    <button class="btn btn-reset" onclick="askPassword('reset')"><span>Reset All</span></button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="grid-wrap">
+    <div class="grid-info">
+      Total 10000 &nbsp;|&nbsp; Claimed: <span id="claimed-count">0</span> &nbsp;|&nbsp; Remaining: <span id="remain-count">10000</span>
+    </div>
+    <div class="grid-scroll"><div id="grid"></div></div>
+  </div>
+
+  <div class="leaderboard">
+    <div class="lb-header">LEADERBOARD</div>
+    <div class="lb-stats">
+      <span>Players</span>
+      <span class="highlight" id="people-count">0</span>
+    </div>
+    <div id="lb-list"></div>
+  </div>
+</div>
+
+<!-- 이름 입력 모달 -->
+<div class="modal-overlay" id="name-modal">
+  <div class="modal">
+    <h2 id="name-modal-title">Enter your name</h2>
+    <input type="text" id="name-input" placeholder="Name" maxlength="20" autocomplete="off">
+    <div class="modal-error" id="name-error"></div>
+    <div class="modal-btns">
+      <button class="btn btn-confirm" onclick="confirmName()">Confirm</button>
+      <button class="btn btn-cancel"  onclick="closeNameModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- 비밀번호 모달 -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal">
+    <h2 id="pw-modal-title">Admin Authentication</h2>
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="off">
+    <div class="modal-error" id="pw-error"></div>
+    <div class="modal-btns">
+      <button class="btn btn-confirm" onclick="confirmPassword()">Confirm</button>
+      <button class="btn btn-cancel"  onclick="closePwModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp }                        from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+  import { getDatabase, ref, set, onValue, remove, update, get }
+    from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+
+  // ============================================================
+  // Firebase 설정 — 본인 프로젝트 config 로 교체하세요
+  // ============================================================
+  const firebaseConfig = {
+    apiKey:            "AIzaSyC-exCTRjt0gzf-JncDmVS1TiUh2lIccdo",
+    authDomain:        "macro-classroom.firebaseapp.com",
+    databaseURL:       "https://macro-classroom-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "macro-classroom",
+    storageBucket:     "macro-classroom.firebasestorage.app",
+    messagingSenderId: "365546886549",
+    appId:             "1:365546886549:web:f6782ce34cf7aea568129c"
+  };
+
+  // ============================================================
+  // 관리자 비밀번호 (원하는 값으로 변경하세요)
+  // ============================================================
+  const ADMIN_PASSWORD = "wjdqh";
+
+  // ============================================================
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  const seatsRef  = ref(db, "seats");
+  const activeRef = ref(db, "gameActive");
+
+  // ---- 상태 ----
+  let seats     = {};   // { "0": { name, color }, ... }
+  let isActive  = false;
+  let pendingSeat = null;  // 클릭한 좌석 번호
+  let pendingAction = null; // 'start' | 'stop' | 'reset'
+
+  // ---- 색상 생성 ----
+  const COLORS = [
+    "#e94560","#00b894","#fdcb6e","#74b9ff","#a29bfe",
+    "#fd79a8","#00cec9","#55efc4","#ffeaa7","#fab1a0",
+    "#6c5ce7","#e17055","#81ecec","#dfe6e9","#f9ca24",
+    "#f0932b","#eb4d4b","#6ab04c","#22a6b3","#be2edd",
+    "#4834d4","#130f40","#30336b","#c7ecee","#686de0",
+    "#badc58","#7ed6df","#e056fd","#f9ca24","#95e1d3"
+  ];
+
+  function nameToColor(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return COLORS[h % COLORS.length];
+  }
+
+  // ---- 그리드 초기 생성 ----
+  const grid = document.getElementById("grid");
+  for (let i = 0; i < 10000; i++) {
+    const seat = document.createElement("div");
+    seat.className = "seat inactive";
+    seat.dataset.num = i + 1;
+    seat.id = `seat-${i}`;
+    seat.addEventListener("click", () => onSeatClick(i));
+    grid.appendChild(seat);
+  }
+
+  // ---- Firebase 실시간 감지 ----
+  onValue(seatsRef, (snap) => {
+    seats = snap.val() || {};
+    renderGrid();
+    renderLeaderboard();
+  });
+
+  onValue(activeRef, (snap) => {
+    isActive = snap.val() === true;
+    updateStatus();
+    renderGrid();
+  });
+
+  // ---- 렌더링 ----
+  function renderGrid() {
+    for (let i = 0; i < 10000; i++) {
+      const el = document.getElementById(`seat-${i}`);
+      if (!el) continue;
+      const data = seats[i];
+      if (data) {
+        el.className = "seat claimed";
+        el.style.background = data.color;
+        el.dataset.owner = data.name;
+        el.title = data.name;
+      } else {
+        el.style.background = "";
+        el.dataset.owner = "";
+        el.title = "";
+        el.className = isActive ? "seat" : "seat inactive";
+      }
+    }
+    const claimed = Object.keys(seats).length;
+    document.getElementById("claimed-count").textContent = claimed;
+    document.getElementById("remain-count").textContent  = 10000 - claimed;
+  }
+
+  function renderLeaderboard() {
+    const counts = {};
+    const colorMap = {};
+    for (const key in seats) {
+      const { name, color } = seats[key];
+      counts[name]   = (counts[name] || 0) + 1;
+      colorMap[name] = color;
+    }
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    document.getElementById("people-count").textContent = sorted.length;
+
+    const list = document.getElementById("lb-list");
+    list.innerHTML = "";
+    sorted.forEach(([name, cnt], idx) => {
+      const rank = idx + 1;
+      const item = document.createElement("div");
+      item.className = "lb-item";
+      const rankClass = rank === 1 ? "gold" : rank === 2 ? "silver" : rank === 3 ? "bronze" : "";
+      item.innerHTML = `
+        <div class="lb-rank ${rankClass}">${rank}</div>
+        <div class="lb-dot" style="background:${colorMap[name]}"></div>
+        <div class="lb-name">${escapeHtml(name)}</div>
+        <div class="lb-count">${cnt} seats</div>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  function updateStatus() {
+    const badge = document.getElementById("status-badge");
+    if (isActive) {
+      badge.textContent = "Active";
+      badge.className = "status-badge active";
+    } else {
+      badge.textContent = "Stopped";
+      badge.className = "status-badge inactive";
+    }
+  }
+
+  // ---- 좌석 클릭 ----
+  function onSeatClick(idx) {
+    if (!isActive) return;
+    if (seats[idx]) return; // 이미 선택됨
+    pendingSeat = idx;
+    document.getElementById("name-modal-title").textContent = `#${idx + 1} — Enter your name`;
+    document.getElementById("name-input").value  = "";
+    document.getElementById("name-error").textContent = "";
+    document.getElementById("name-modal").classList.add("show");
+    setTimeout(() => document.getElementById("name-input").focus(), 100);
+  }
+
+  function closeNameModal() {
+    document.getElementById("name-modal").classList.remove("show");
+    pendingSeat = null;
+  }
+
+  function confirmName() {
+    const name = document.getElementById("name-input").value.trim();
+    if (!name) {
+      document.getElementById("name-error").textContent = "Please enter your name.";
+      return;
+    }
+    const color = nameToColor(name);
+    set(ref(db, `seats/${pendingSeat}`), { name, color });
+    closeNameModal();
+  }
+
+  // Enter 키 지원
+  document.getElementById("name-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") confirmName();
+    if (e.key === "Escape") closeNameModal();
+  });
+
+  // ---- 비밀번호 모달 ----
+  function askPassword(action) {
+    pendingAction = action;
+    const titles = { start: "Start — Admin Auth", stop: "Stop — Admin Auth", reset: "Reset All — Admin Auth" };
+    document.getElementById("pw-modal-title").textContent = titles[action];
+    document.getElementById("pw-input").value  = "";
+    document.getElementById("pw-error").textContent = "";
+    document.getElementById("pw-modal").classList.add("show");
+    setTimeout(() => document.getElementById("pw-input").focus(), 100);
+  }
+
+  function closePwModal() {
+    document.getElementById("pw-modal").classList.remove("show");
+    pendingAction = null;
+  }
+
+  function confirmPassword() {
+    const pw = document.getElementById("pw-input").value;
+    if (pw !== ADMIN_PASSWORD) {
+      document.getElementById("pw-error").textContent = "Incorrect password.";
+      document.getElementById("pw-input").value = "";
+      return;
+    }
+    const action = pendingAction;
+    closePwModal();
+    if (action === "start") {
+      set(activeRef, true);
+    } else if (action === "stop") {
+      set(activeRef, false);
+    } else if (action === "reset") {
+      remove(seatsRef);
+      set(activeRef, false);
+    }
+  }
+
+  document.getElementById("pw-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") confirmPassword();
+    if (e.key === "Escape") closePwModal();
+  });
+
+  // HTML onclick에서 접근할 수 있도록 전역 등록
+  window.askPassword    = askPassword;
+  window.closePwModal   = closePwModal;
+  window.confirmPassword = confirmPassword;
+  window.closeNameModal  = closeNameModal;
+  window.confirmName     = confirmName;
+
+  // ---- XSS 방지 ----
+  function escapeHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+</script>
+
+</body>
+</html>
