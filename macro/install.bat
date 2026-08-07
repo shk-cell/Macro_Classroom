@@ -11,11 +11,6 @@ if %errorlevel% == 0 (
 ) else (
     echo Installing Python 3.12...
     winget install -e --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements
-    if %errorlevel% neq 0 (
-        echo Failed to install Python. Please install manually from https://www.python.org
-        pause
-        exit /b 1
-    )
     echo Python 3.12 installed!
     echo.
     :: Refresh PATH so python command works immediately
