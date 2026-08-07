@@ -1,4 +1,5 @@
 @echo off
+chcp 437 >nul
 echo ================================
 echo  Macro Classroom - Auto Install
 echo ================================
@@ -13,8 +14,6 @@ if %errorlevel% == 0 (
     winget install -e --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements
     echo Python 3.12 installed!
     echo.
-    :: Refresh PATH so python command works immediately
-    call refreshenv 2>nul
     set "PATH=%LOCALAPPDATA%\Programs\Python\Python312;%LOCALAPPDATA%\Programs\Python\Python312\Scripts;%PATH%"
 )
 
