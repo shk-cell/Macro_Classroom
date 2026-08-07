@@ -37,18 +37,26 @@ def run(name, image_path, confidence, delay, log, stop_event):
     time.sleep(3)
     log(f"Image recognition started: {image_path}")
     count = 0
+    not_found_streak = 0
 
     while not stop_event.is_set():
+        location = None
         try:
             location = pyautogui.locateOnScreen(image_path, confidence=float(confidence))
-        except Exception as e:
-            log(f"Error: {e}")
-            break
+        except Exception:
+            # confidence 모드에서 이미지 못 찾으면 예외 발생 — None 으로 처리
+            pass
 
         if location is None:
-            log("Image not found. Stopping.")
-            break
+            not_found_streak += 1
+            log(f"Seat not found on screen... ({not_found_streak})")
+            if not_found_streak >= 5:
+                log("Could not find seat 5 times. Stopping.")
+                break
+            time.sleep(1)
+            continue
 
+        not_found_streak = 0
         center = pyautogui.center(location)
         pyautogui.click(center)
         time.sleep(0.5)
