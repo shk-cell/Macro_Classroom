@@ -1,81 +1,74 @@
 import tkinter as tk
-from tkinter import filedialog
 import threading
 import time
-import pyautogui
-import pyperclip
+import random
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 
 SITE_URL = "https://shk-cell.github.io/Macro_Classroom/"
 
-def run(name, image_path, confidence, delay, log, stop_event):
-    log(f"3초 후 시작합니다. 브라우저로 이동하세요!")
-    time.sleep(3)
-    log(f"이미지 인식 시작: {image_path}")
+def run(name, delay, log, stop_event):
+    log("브라우저 실행 중...")
+    driver = webdriver.Chrome()
+    driver.get(SITE_URL)
+    time.sleep(2)
+    log("사이트 접속 완료. 빈 좌석 탐색 시작!")
     count = 0
 
     while not stop_event.is_set():
+        seats = driver.find_elements(By.CSS_SELECTOR, ".seat:not(.claimed):not(.inactive)")
+        if not seats:
+            log("빈 좌석 없음. 종료.")
+            break
+
+        seat = random.choice(seats)
         try:
-            location = pyautogui.locateOnScreen(image_path, confidence=float(confidence))
-        except Exception as e:
-            log(f"오류: {e}")
-            break
+            driver.execute_script("arguments[0].click();", seat)
+            result = driver.execute_script("""
+                const modal = document.getElementById('name-modal');
+                if (!modal || !modal.classList.contains('show')) return false;
+                document.getElementById('name-input').value = arguments[0];
+                window.confirmName();
+                return true;
+            """, name)
+            if result:
+                count += 1
+                log(f"[{count}번째] 점유 완료!")
+        except:
+            pass
 
-        if location is None:
-            log("이미지를 찾을 수 없습니다. 종료.")
-            break
-
-        center = pyautogui.center(location)
-        pyautogui.click(center)
-        time.sleep(0.5)
-        pyperclip.copy(name)
-        pyautogui.hotkey("ctrl", "v")
-        time.sleep(0.15)
-        pyautogui.press("enter")
-        count += 1
-        log(f"[{count}번째] 점유 완료! 위치: {center}")
         time.sleep(float(delay))
 
-    log(f"완료! 총 {count}개")
+    driver.quit()
+    log(f"완료! 총 {count}개 점유")
 
 
 class App:
     def __init__(self, root):
         self.root = root
         self.stop_event = threading.Event()
-        root.title("V2 — 이미지 인식 매크로")
-        root.geometry("420x480")
+        root.title("V3 — 태그 기반 매크로 (Selenium)")
+        root.geometry("420x400")
         root.resizable(False, False)
         root.configure(bg="#1a1a1a")
 
         self._label("이름")
         self.name = self._entry("내이름")
 
-        self._label("이미지 경로")
-        f = tk.Frame(root, bg="#1a1a1a")
-        f.pack(fill="x", padx=14, pady=(0, 4))
-        self.img_var = tk.StringVar(value="images/empty_seat.png")
-        tk.Entry(f, textvariable=self.img_var, bg="#0d0d0d", fg="#00ff41",
-                 insertbackground="#00ff41", font=("Consolas", 10),
-                 relief="flat", bd=4).pack(side="left", fill="x", expand=True)
-        tk.Button(f, text="찾기", command=self._browse,
-                  bg="#2a2a2a", fg="#00ff41", font=("Consolas", 9),
-                  relief="flat", padx=8, cursor="hand2").pack(side="left", padx=(6, 0))
-
-        tk.Label(root, text="※ 빈 좌석 이미지를 미리 캡처해서 저장하세요",
-                 bg="#1a1a1a", fg="#555", font=("Consolas", 8)).pack()
-
-        self._label("유사도 (0.0 ~ 1.0)")
-        self.conf = self._entry("0.8")
-
         self._label("딜레이 (초)")
-        self.delay = self._entry("0.4")
+        self.delay = self._entry("0.3")
+
+        tk.Label(root,
+                 text="HTML 태그를 분석해 빈 좌석을 자동으로 찾아 클릭합니다.\nSelenium이 브라우저를 직접 제어합니다.",
+                 bg="#1a1a1a", fg="#555", font=("Consolas", 9), justify="left"
+                 ).pack(anchor="w", padx=14, pady=(4, 0))
 
         self._btn_row()
         self._log_box()
 
     def _label(self, text):
         tk.Label(self.root, text=text, bg="#1a1a1a", fg="#00ff41",
-                 font=("Consolas", 10, "bold")).pack(anchor="w", padx=14, pady=(10, 2))
+                 font=("Consolas", 10, "bold")).pack(anchor="w", padx=14, pady=(12, 2))
 
     def _entry(self, default):
         v = tk.StringVar(value=default)
@@ -84,14 +77,9 @@ class App:
                  relief="flat", bd=4).pack(fill="x", padx=14, pady=(0, 4))
         return v
 
-    def _browse(self):
-        path = filedialog.askopenfilename(filetypes=[("이미지", "*.png *.jpg")])
-        if path:
-            self.img_var.set(path)
-
     def _btn_row(self):
         f = tk.Frame(self.root, bg="#1a1a1a")
-        f.pack(pady=12)
+        f.pack(pady=14)
         tk.Button(f, text="▶  START", command=self._start,
                   bg="#00aa33", fg="#000", font=("Consolas", 12, "bold"),
                   relief="flat", padx=24, pady=8, cursor="hand2",
@@ -118,8 +106,6 @@ class App:
         self.stop_event.clear()
         threading.Thread(target=run, args=(
             self.name.get(),
-            self.img_var.get(),
-            self.conf.get(),
             self.delay.get(),
             self.log,
             self.stop_event
