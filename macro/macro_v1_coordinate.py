@@ -115,6 +115,7 @@ class App:
         # START / STOP
         self._btn_row()
         self._log_box()
+        root.bind("<Escape>", lambda e: self._stop())
 
     # ── Coordinate Actions ──
 

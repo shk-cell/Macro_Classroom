@@ -65,6 +65,7 @@ class App:
 
         self._btn_row()
         self._log_box()
+        root.bind("<Escape>", lambda e: self._stop())
 
     def _label(self, text):
         tk.Label(self.root, text=text, bg="#1a1a1a", fg="#00ff41",

@@ -120,6 +120,7 @@ class App:
 
         self._btn_row()
         self._log_box()
+        root.bind("<Escape>", lambda e: self._stop())
 
         # 시작 시 자동 생성
         generate_images()
