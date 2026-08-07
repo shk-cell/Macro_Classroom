@@ -1,479 +1,638 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOVA CONCERT - Ticket Booking</title>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #eee; min-height: 100vh; cursor: default; user-select: none; }
-  input, button { user-select: auto; cursor: auto; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TKD 10000 Seats</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
 
-  /* ── Header ── */
-  .site-header {
-    background: rgba(10,10,15,0.95);
-    border-bottom: 1px solid #222;
-    padding: 14px 40px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-    backdrop-filter: blur(8px);
-  }
-  .site-logo { font-size: 22px; font-weight: 900; letter-spacing: 4px; color: #fff; }
-  .site-logo span { color: #c678ff; }
+    :root {
+      --green:      #00ff41;
+      --green-dim:  #00b32d;
+      --green-dark: #003b00;
+      --green-glow: rgba(0,255,65,0.4);
+      --bg:         #000000;
+      --bg2:        #0a0a0a;
+      --bg3:        #0d1a0d;
+    }
 
-  /* ── Hero ── */
-  .hero {
-    position: relative; min-height: 380px;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden; padding: 60px 20px;
-  }
-  .hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 60% 40%, #3a0060 0%, #1a0030 40%, #0a0a0f 70%); }
-  .hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 70%, rgba(198,120,255,0.15) 0%, transparent 60%); }
-  .hero-content { position: relative; z-index: 1; text-align: center; max-width: 700px; }
-  .hero-badge {
-    display: inline-block; background: rgba(198,120,255,0.15);
-    border: 1px solid rgba(198,120,255,0.4); border-radius: 20px;
-    padding: 5px 18px; font-size: 12px; color: #c678ff;
-    letter-spacing: 2px; margin-bottom: 20px;
-  }
-  .hero-title {
-    font-size: clamp(42px, 8vw, 80px); font-weight: 900;
-    line-height: 1.1; letter-spacing: -1px; color: #fff;
-    text-shadow: 0 0 60px rgba(198,120,255,0.5);
-  }
-  .hero-title .accent { color: #c678ff; }
-  .hero-sub { margin-top: 16px; font-size: 16px; color: #aaa; line-height: 1.7; }
-  .hero-info { margin-top: 28px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
-  .hero-info-item { text-align: center; }
-  .hero-info-label { font-size: 11px; color: #666; letter-spacing: 1px; margin-bottom: 4px; }
-  .hero-info-value { font-size: 15px; font-weight: 700; color: #fff; }
+    body {
+      background: var(--bg);
+      color: var(--green);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-  /* ── Reserve Section ── */
-  .reserve-section { max-width: 600px; margin: 0 auto; padding: 40px 20px 60px; }
+    header, .main { position: relative; z-index: 1; }
 
-  /* ── Seats Board ── */
-  .seats-board {
-    background: #111118; border: 1px solid #2a2a3a;
-    border-radius: 16px; padding: 24px; margin-bottom: 28px;
-  }
-  .seats-board-title {
-    font-size: 13px; color: #888; letter-spacing: 1px; margin-bottom: 16px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .seats-board-title::before {
-    content: ''; display: inline-block; width: 6px; height: 6px;
-    border-radius: 50%; background: #c678ff; box-shadow: 0 0 6px #c678ff;
-  }
-  .seats-grid {
-    display: grid; grid-template-columns: repeat(10, 1fr);
-    gap: 6px; margin-bottom: 16px;
-  }
-  .seat {
-    aspect-ratio: 1; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 700;
-    transition: all 0.3s; border: 1px solid transparent;
-  }
-  .seat.empty { background: rgba(198,120,255,0.1); border-color: rgba(198,120,255,0.3); color: #c678ff; }
-  .seat.taken { background: rgba(255,255,255,0.05); border-color: #333; color: #555; }
-  .seats-count { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-  .seats-left { color: #c678ff; font-weight: 700; font-size: 16px; }
-  .seats-total { color: #555; }
+    header {
+      background: rgba(0,0,0,0.92);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--green);
+      box-shadow: 0 0 20px var(--green-glow), inset 0 -1px 0 var(--green);
+    }
 
-  /* ── Status Banner ── */
-  .status-banner {
-    border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;
-    text-align: center; font-weight: 700; font-size: 15px; transition: all 0.4s;
-  }
-  .status-banner.waiting { background: rgba(255,200,0,0.08); border: 1px solid rgba(255,200,0,0.25); color: #ffc800; }
-  .status-banner.open { background: rgba(198,120,255,0.1); border: 1px solid rgba(198,120,255,0.4); color: #c678ff; animation: pulse-border 2s infinite; }
-  .status-banner.closed { background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.25); color: #ff5050; }
-  @keyframes pulse-border { 0%, 100% { box-shadow: 0 0 0 0 rgba(198,120,255,0.3); } 50% { box-shadow: 0 0 0 6px rgba(198,120,255,0); } }
-  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
-  .status-banner.waiting .status-dot { background: #ffc800; }
-  .status-banner.open .status-dot { background: #c678ff; animation: blink 1s infinite; }
-  .status-banner.closed .status-dot { background: #ff5050; }
-  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+    header h1 {
+      font-family: 'VT323', monospace;
+      font-size: 2rem;
+      color: var(--green);
+      letter-spacing: 4px;
+      text-shadow: 0 0 10px var(--green), 0 0 30px var(--green-glow);
+      text-transform: uppercase;
+    }
 
-  /* ── Reserve Form ── */
-  .reserve-form { background: #111118; border: 1px solid #2a2a3a; border-radius: 16px; padding: 28px 24px; }
-  .reserve-form.disabled { opacity: 0.5; pointer-events: none; }
-  .form-label { font-size: 12px; color: #888; letter-spacing: 1px; margin-bottom: 8px; display: block; }
-  .form-input {
-    width: 100%; background: #0a0a0f; border: 1px solid #333;
-    border-radius: 10px; padding: 14px 16px; font-size: 16px;
-    color: #fff; font-family: inherit; outline: none;
-    transition: border-color 0.2s; margin-bottom: 16px;
-  }
-  .form-input:focus { border-color: #c678ff; }
-  .form-input::placeholder { color: #444; }
-  .reserve-btn {
-    width: 100%; background: linear-gradient(135deg, #8b3fff, #c678ff);
-    border: none; border-radius: 10px; padding: 16px;
-    font-size: 16px; font-weight: 700; color: #fff;
-    cursor: pointer; font-family: inherit; transition: all 0.2s; letter-spacing: 1px;
-  }
-  .reserve-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(198,120,255,0.35); }
-  .reserve-btn:active { transform: translateY(0); }
-  .reserve-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; box-shadow: none; }
+    .header-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
 
-  /* ── Result Message ── */
-  .result-msg {
-    margin-top: 16px; border-radius: 10px; padding: 16px;
-    font-size: 14px; font-weight: 700; text-align: center;
-    display: none; line-height: 1.6;
-  }
-  .result-msg.success { background: rgba(100,255,150,0.1); border: 1px solid rgba(100,255,150,0.3); color: #64ff96; }
-  .result-msg.error { background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.3); color: #ff5050; }
+    /* 상태 뱃지 + 버튼 공통 크기 */
+    .status-badge,
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 110px;
+      height: 40px;
+      font-family: 'VT323', monospace;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: 1px solid currentColor;
+    }
 
-  /* ── Leaderboard ── */
-  .leaderboard { margin-top: 32px; }
-  .leaderboard-title { font-size: 13px; color: #888; letter-spacing: 1px; margin-bottom: 12px; text-align: center; }
-  .leaderboard-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 16px; background: rgba(255,255,255,0.03);
-    border-radius: 8px; margin-bottom: 6px; animation: fadeIn 0.3s ease;
-  }
-  .leaderboard-item.rank-1 { background: rgba(255,200,0,0.08); border: 1px solid rgba(255,200,0,0.2); }
-  .leaderboard-item.rank-2 { background: rgba(180,180,180,0.06); border: 1px solid rgba(180,180,180,0.15); }
-  .leaderboard-item.rank-3 { background: rgba(180,100,40,0.08); border: 1px solid rgba(180,100,40,0.2); }
-  .lb-rank { width: 28px; height: 28px; border-radius: 6px; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #555; }
-  .rank-1 .lb-rank { color: #ffc800; }
-  .rank-2 .lb-rank { color: #bbb; }
-  .rank-3 .lb-rank { color: #cd7f32; }
-  .lb-name { font-size: 14px; font-weight: 600; flex: 1; }
-  .lb-count { font-size: 20px; font-weight: 900; color: #c678ff; min-width: 40px; text-align: right; }
-  .lb-count span { font-size: 11px; font-weight: 400; color: #555; margin-left: 2px; }
-  @keyframes fadeIn { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform: none; } }
+    .status-badge {
+      pointer-events: none;
+    }
+    .status-badge.active {
+      color: var(--green);
+      border-color: var(--green);
+      box-shadow: 0 0 10px var(--green-glow), inset 0 0 10px rgba(0,255,65,0.1);
+      text-shadow: 0 0 8px var(--green);
+      animation: blink-badge 1.5s infinite;
+    }
+    .status-badge.inactive {
+      color: #1a4d1a;
+      border-color: #1a4d1a;
+    }
+    @keyframes blink-badge {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.6; }
+    }
 
-  /* ── Admin FAB ── */
-  .admin-fab {
-    position: fixed; bottom: 28px; right: 28px;
-    width: 44px; height: 44px; border-radius: 50%;
-    background: rgba(255,255,255,0.06); border: 1px solid #333;
-    color: #555; font-size: 18px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; z-index: 200;
-  }
-  .admin-fab:hover { background: rgba(255,255,255,0.1); color: #aaa; }
+    .btn {
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .btn:hover::before { opacity: 1; }
+    .btn:hover { color: #000; text-shadow: none; }
+    .btn span { position: relative; z-index: 1; }
 
-  /* ── Admin Modal ── */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    z-index: 300; display: none; backdrop-filter: blur(4px);
-  }
-  .modal-overlay.show { display: block; }
-  .modal {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: #111118; border: 1px solid #2a2a3a; border-radius: 20px;
-    padding: 32px; width: 320px; z-index: 400; display: none;
-  }
-  .modal.show { display: block; }
-  .modal-title { font-size: 16px; font-weight: 900; letter-spacing: 2px; color: #c678ff; margin-bottom: 24px; text-align: center; }
-  .modal-input {
-    width: 100%; background: #0a0a0f; border: 1px solid #333;
-    border-radius: 10px; padding: 12px 16px; font-size: 14px;
-    color: #fff; font-family: inherit; outline: none;
-    transition: border-color 0.2s; margin-bottom: 16px;
-  }
-  .modal-input:focus { border-color: #c678ff; }
-  .modal-input::placeholder { color: #444; }
-  .modal-btns { display: flex; flex-direction: column; gap: 8px; }
-  .modal-btn {
-    width: 100%; border: none; border-radius: 10px; padding: 13px;
-    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s;
-  }
-  .modal-btn-open { background: rgba(100,255,150,0.1); border: 1px solid rgba(100,255,150,0.3); color: #64ff96; }
-  .modal-btn-close { background: rgba(255,200,0,0.1); border: 1px solid rgba(255,200,0,0.3); color: #ffc800; }
-  .modal-btn-reset { background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.3); color: #ff5050; }
-  .modal-btn-cancel { background: rgba(255,255,255,0.04); border: 1px solid #333; color: #555; margin-top: 8px; }
-  .modal-btn:hover { opacity: 0.8; }
+    .btn-start { color: var(--green); border-color: var(--green); }
+    .btn-start::before { background: var(--green); }
+    .btn-start:hover { box-shadow: 0 0 15px var(--green-glow); }
 
-  /* ── Footer ── */
-  .site-footer { border-top: 1px solid #1a1a22; padding: 24px 40px; text-align: center; font-size: 12px; color: #444; }
-</style>
+    .btn-stop { color: #aaff00; border-color: #aaff00; }
+    .btn-stop::before { background: #aaff00; }
+    .btn-stop:hover { box-shadow: 0 0 15px rgba(170,255,0,0.5); }
+
+    .btn-reset { color: #ff0040; border-color: #ff0040; }
+    .btn-reset::before { background: #ff0040; }
+    .btn-reset:hover { box-shadow: 0 0 15px rgba(255,0,64,0.5); }
+
+    .main {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      align-items: flex-start;
+    }
+
+    .grid-wrap { flex: 1; }
+
+    .grid-info {
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+      color: var(--green-dim);
+      letter-spacing: 1px;
+    }
+    .grid-info span { color: var(--green); text-shadow: 0 0 6px var(--green); }
+
+    .grid-scroll {
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .grid-scroll::-webkit-scrollbar { width: 4px; }
+    .grid-scroll::-webkit-scrollbar-track { background: #000; }
+    .grid-scroll::-webkit-scrollbar-thumb { background: var(--green-dim); border-radius: 2px; }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(25, 28px);
+      gap: 3px;
+    }
+
+    .seat {
+      width: 28px;
+      height: 28px;
+      background: #0a1a0a;
+      border: 1px solid #00cc33;
+      cursor: pointer;
+      transition: all 0.1s;
+      position: relative;
+    }
+    .seat:hover:not(.claimed):not(.inactive) {
+      background: #00ff41;
+      border-color: #00ff41;
+      box-shadow: 0 0 8px #00ff41;
+      z-index: 2;
+      transform: scale(1.35);
+    }
+    .seat.claimed {
+      cursor: default;
+      border-color: transparent;
+    }
+    .seat.claimed:hover {
+      transform: scale(1.35);
+      z-index: 2;
+      box-shadow: 0 0 8px rgba(255,255,255,0.4);
+    }
+    .seat.inactive {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+    .seat.inactive:hover { transform: none; box-shadow: none; }
+
+    /* Leaderboard */
+    .leaderboard {
+      width: 210px;
+      min-width: 190px;
+      background: rgba(0,0,0,0.9);
+      border: 1px solid var(--green);
+      box-shadow: 0 0 20px var(--green-glow), inset 0 0 20px rgba(0,255,65,0.03);
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 90px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lb-header {
+      background: var(--green-dark);
+      padding: 12px;
+      text-align: center;
+      font-family: 'VT323', monospace;
+      font-size: 1.4rem;
+      color: var(--green);
+      letter-spacing: 4px;
+      border-bottom: 1px solid var(--green);
+      text-shadow: 0 0 10px var(--green);
+    }
+
+    .lb-stats {
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--green-dim);
+      border-bottom: 1px solid #0a2a0a;
+      letter-spacing: 1px;
+    }
+    .lb-stats .highlight { color: var(--green); text-shadow: 0 0 6px var(--green); }
+
+    #lb-list { overflow-y: auto; flex: 1; padding: 4px 0; }
+    #lb-list::-webkit-scrollbar { width: 3px; }
+    #lb-list::-webkit-scrollbar-track { background: #000; }
+    #lb-list::-webkit-scrollbar-thumb { background: var(--green-dim); }
+
+    .lb-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-bottom: 1px solid #0a1a0a;
+      transition: background 0.1s;
+      font-size: 0.78rem;
+      letter-spacing: 0.5px;
+    }
+    .lb-item:hover { background: rgba(0,255,65,0.05); }
+
+    .lb-rank {
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      color: #1a5c1a;
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .lb-rank.gold   { color: #ffd700; text-shadow: 0 0 6px rgba(255,215,0,0.6); }
+    .lb-rank.silver { color: #c0c0c0; }
+    .lb-rank.bronze { color: #cd7f32; }
+
+    .lb-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 4px currentColor;
+    }
+
+    .lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--green); }
+    .lb-count { font-family: 'VT323', monospace; font-size: 1rem; color: var(--green); flex-shrink: 0; text-shadow: 0 0 6px var(--green); }
+
+    /* Modals */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: #000;
+      border: 1px solid var(--green);
+      padding: 30px;
+      width: 340px;
+      max-width: 90vw;
+      box-shadow: 0 0 40px var(--green-glow), inset 0 0 40px rgba(0,255,65,0.03);
+      animation: popIn 0.15s ease;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.9) translateY(-10px); opacity: 0; }
+      to   { transform: scale(1) translateY(0);       opacity: 1; }
+    }
+
+    .modal h2 {
+      margin-bottom: 18px;
+      font-family: 'VT323', monospace;
+      font-size: 1.5rem;
+      color: var(--green);
+      text-align: center;
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px var(--green);
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #050f05;
+      border: 1px solid var(--green-dim);
+      color: var(--green);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1rem;
+      margin-bottom: 8px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      letter-spacing: 2px;
+    }
+    .modal input::placeholder { color: #1a5c1a; }
+    .modal input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 10px var(--green-glow);
+    }
+
+    .modal-error {
+      color: #ff0040;
+      font-size: 0.8rem;
+      min-height: 18px;
+      margin-bottom: 10px;
+      text-align: center;
+      text-shadow: 0 0 6px rgba(255,0,64,0.6);
+      letter-spacing: 1px;
+    }
+
+    .modal-btns { display: flex; gap: 10px; margin-top: 4px; }
+    .modal-btns .btn { flex: 1; padding: 10px; font-size: 1.1rem; }
+    .btn-confirm { border-color: var(--green); color: var(--green); }
+    .btn-cancel  { border-color: #1a5c1a; color: #1a5c1a; }
+    .btn-cancel:hover { color: #000; border-color: #1a5c1a; box-shadow: none; }
+    .btn-cancel:hover::before { background: #1a5c1a; opacity: 1; }
+
+
+    /* Scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    @media (max-width: 900px) {
+      .main { flex-direction: column; padding: 8px; }
+      .leaderboard { width: 100%; position: static; max-height: 280px; }
+      #grid { grid-template-columns: repeat(10, 28px); }
+    }
+  </style>
 </head>
 <body>
 
-<!-- Header -->
-<header class="site-header">
-  <div class="site-logo">My Macro <span>Classroom</span></div>
+<header>
+  <h1>TKD 10000 Seats</h1>
+  <div class="header-controls">
+    <div id="status-badge" class="status-badge inactive">Stopped</div>
+    <button class="btn btn-start" onclick="askPassword('start')"><span>Start</span></button>
+    <button class="btn btn-stop"  onclick="askPassword('stop')"><span>Stop</span></button>
+    <button class="btn btn-reset" onclick="askPassword('reset')"><span>Reset All</span></button>
+  </div>
 </header>
 
-<!-- Hero -->
-<section class="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-glow"></div>
-  <div class="hero-content">
-    <div class="hero-badge">★ 2026 SPECIAL CONCERT ★</div>
-    <div class="hero-title">NOVA<br><span class="accent">ECLIPSE</span> TOUR</div>
-    <div class="hero-sub">100 seats only — First come, first served<br>The best show of the year. Don't miss it.</div>
-    <div class="hero-info">
-      <div class="hero-info-item">
-        <div class="hero-info-label">DATE</div>
-        <div class="hero-info-value">2026.09.13 SAT</div>
-      </div>
-      <div class="hero-info-item">
-        <div class="hero-info-label">VENUE</div>
-        <div class="hero-info-value">Olympic Park Arena</div>
-      </div>
-      <div class="hero-info-item">
-        <div class="hero-info-label">SEATS</div>
-        <div class="hero-info-value">Left <span id="hero-left">-</span> / 100</div>
-      </div>
+<div class="main">
+  <div class="grid-wrap">
+    <div class="grid-info">
+      Total 10000 &nbsp;|&nbsp; Claimed: <span id="claimed-count">0</span> &nbsp;|&nbsp; Remaining: <span id="remain-count">10000</span>
     </div>
+    <div class="grid-scroll"><div id="grid"></div></div>
   </div>
-</section>
 
-<!-- Reserve Section -->
-<section class="reserve-section">
-
-  <!-- Seats Board -->
-  <div class="seats-board">
-    <div class="seats-board-title">Live Seat Status</div>
-    <div class="seats-grid" id="seats-grid"></div>
-    <div class="seats-count">
-      <span>Seats left: <span class="seats-left" id="seats-left">-</span></span>
-      <span class="seats-total">Total 100 seats</span>
+  <div class="leaderboard">
+    <div class="lb-header">LEADERBOARD</div>
+    <div class="lb-stats">
+      <span>Players</span>
+      <span class="highlight" id="people-count">0</span>
     </div>
-  </div>
-
-  <!-- Status Banner -->
-  <div class="status-banner waiting" id="status-banner">
-    <span class="status-dot"></span>
-    <span id="status-text">Booking is not open yet. Please wait.</span>
-  </div>
-
-  <!-- Reserve Form -->
-  <div class="reserve-form disabled" id="reserve-form">
-    <label class="form-label" for="name-input">YOUR NAME</label>
-    <input class="form-input" id="name-input" type="text" placeholder="Enter your name" maxlength="20">
-    <button class="reserve-btn" id="reserve-btn" onclick="doReserve()">Book Now</button>
-    <div class="result-msg" id="result-msg"></div>
-  </div>
-
-  <!-- Leaderboard -->
-  <div class="leaderboard" id="leaderboard" style="display:none;">
-    <div class="leaderboard-title">🏆 Leaderboard</div>
-    <div id="leaderboard-items"></div>
-  </div>
-
-</section>
-
-<!-- Footer -->
-<footer class="site-footer">
-  © 2026 TICKETX Corp. All rights reserved.
-</footer>
-
-<!-- Admin FAB -->
-<button class="admin-fab" onclick="openAdminModal()" title="Admin">⚙</button>
-
-<!-- Admin Modal -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeAdminModal()"></div>
-<div class="modal" id="admin-modal">
-  <div class="modal-title">ADMIN PANEL</div>
-  <input class="modal-input" id="admin-password" type="password" placeholder="Enter admin password">
-  <div class="modal-btns">
-    <button class="modal-btn modal-btn-open" onclick="adminAction('open')">▶ Open Booking</button>
-    <button class="modal-btn modal-btn-close" onclick="adminAction('close')">■ Close Booking</button>
-    <button class="modal-btn modal-btn-reset" onclick="adminAction('reset')">⟳ Reset All Reservations</button>
-    <button class="modal-btn modal-btn-cancel" onclick="closeAdminModal()">Cancel</button>
+    <div id="lb-list"></div>
   </div>
 </div>
 
-<script>
-// ── Firebase Config ──────────────────────────────
-// Replace with your own Firebase project config
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-// ─────────────────────────────────────────────────
-
-const TOTAL_SEATS = 100;
-const ADMIN_PASSWORD = 'jungboman';
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let currentIsOpen = false;
-let reserving = false;
-
-// ── Real-time listener ──
-db.ref('/').on('value', snapshot => {
-  const data = snapshot.val() || {};
-  const state = data.state || { is_open: false };
-  const reservations = Object.values(data.reservations || {});
-
-  currentIsOpen = !!state.is_open;
-  updateStatus(state, reservations.length);
-  renderSeats(reservations);
-  renderLeaderboard(reservations);
-});
-
-function updateStatus(state, count) {
-  const banner = document.getElementById('status-banner');
-  const text = document.getElementById('status-text');
-  const form = document.getElementById('reserve-form');
-  const seatsLeft = TOTAL_SEATS - count;
-
-  document.getElementById('seats-left').textContent = seatsLeft;
-  document.getElementById('hero-left').textContent = seatsLeft;
-
-  if (seatsLeft <= 0) {
-    banner.className = 'status-banner closed';
-    text.textContent = 'Booking is closed. All seats are taken.';
-    form.classList.add('disabled');
-  } else if (state.is_open) {
-    banner.className = 'status-banner open';
-    text.textContent = '🎟 Booking is open! Reserve your seat now.';
-    form.classList.remove('disabled');
-  } else {
-    banner.className = 'status-banner waiting';
-    text.textContent = 'Booking is not open yet. Please wait.';
-    form.classList.add('disabled');
-  }
-}
-
-function renderSeats(reservations) {
-  const grid = document.getElementById('seats-grid');
-  grid.innerHTML = '';
-  const takenSeats = new Set(reservations.map(r => r.seat_number));
-  for (let i = 1; i <= TOTAL_SEATS; i++) {
-    const div = document.createElement('div');
-    div.className = 'seat ' + (takenSeats.has(i) ? 'taken' : 'empty');
-    div.innerHTML = takenSeats.has(i) ? '✓' : i;
-    grid.appendChild(div);
-  }
-}
-
-function renderLeaderboard(reservations) {
-  const el = document.getElementById('leaderboard');
-  const itemsEl = document.getElementById('leaderboard-items');
-  if (reservations.length === 0) { el.style.display = 'none'; return; }
-
-  const counts = {};
-  reservations.forEach(r => { counts[r.name] = (counts[r.name] || 0) + 1; });
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const medals = ['🥇', '🥈', '🥉'];
-
-  itemsEl.innerHTML = sorted.map(([name, count], i) => `
-    <div class="leaderboard-item ${i < 3 ? 'rank-' + (i+1) : ''}">
-      <div class="lb-rank">${medals[i] || (i + 1)}</div>
-      <div class="lb-name">${name}</div>
-      <div class="lb-count">${count}<span> seats</span></div>
+<!-- 이름 입력 모달 -->
+<div class="modal-overlay" id="name-modal">
+  <div class="modal">
+    <h2 id="name-modal-title">Enter your name</h2>
+    <input type="text" id="name-input" placeholder="Name" maxlength="20" autocomplete="off">
+    <div class="modal-error" id="name-error"></div>
+    <div class="modal-btns">
+      <button class="btn btn-confirm" onclick="confirmName()">Confirm</button>
+      <button class="btn btn-cancel"  onclick="closeNameModal()">Cancel</button>
     </div>
-  `).join('');
-  el.style.display = 'block';
-}
+  </div>
+</div>
 
-async function doReserve() {
-  if (reserving || !currentIsOpen) return;
-  const name = document.getElementById('name-input').value.trim();
-  if (!name) { showResult('Please enter your name.', 'error'); return; }
+<!-- 비밀번호 모달 -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal">
+    <h2 id="pw-modal-title">Admin Authentication</h2>
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="off">
+    <div class="modal-error" id="pw-error"></div>
+    <div class="modal-btns">
+      <button class="btn btn-confirm" onclick="confirmPassword()">Confirm</button>
+      <button class="btn btn-cancel"  onclick="closePwModal()">Cancel</button>
+    </div>
+  </div>
+</div>
 
-  reserving = true;
-  const btn = document.getElementById('reserve-btn');
-  btn.disabled = true;
-  btn.textContent = 'Processing...';
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp }                        from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+  import { getDatabase, ref, set, onValue, remove, update, get }
+    from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
-  try {
-    const countRef = db.ref('seat_count');
-    let seatNumber = null;
+  // ============================================================
+  // Firebase 설정 — 본인 프로젝트 config 로 교체하세요
+  // ============================================================
+  const firebaseConfig = {
+    apiKey:            "AIzaSyC-exCTRjt0gzf-JncDmVS1TiUh2lIccdo",
+    authDomain:        "macro-classroom.firebaseapp.com",
+    databaseURL:       "https://macro-classroom-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "macro-classroom",
+    storageBucket:     "macro-classroom.firebasestorage.app",
+    messagingSenderId: "365546886549",
+    appId:             "1:365546886549:web:f6782ce34cf7aea568129c"
+  };
 
-    await countRef.transaction(current => {
-      const c = current || 0;
-      if (c >= TOTAL_SEATS) return; // abort
-      seatNumber = c + 1;
-      return seatNumber;
+  // ============================================================
+  // 관리자 비밀번호 (원하는 값으로 변경하세요)
+  // ============================================================
+  const ADMIN_PASSWORD = "wjdqh";
+
+  // ============================================================
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  const seatsRef  = ref(db, "seats");
+  const activeRef = ref(db, "gameActive");
+
+  // ---- 상태 ----
+  let seats     = {};   // { "0": { name, color }, ... }
+  let isActive  = false;
+  let pendingSeat = null;  // 클릭한 좌석 번호
+  let pendingAction = null; // 'start' | 'stop' | 'reset'
+
+  // ---- 색상 생성 ----
+  const COLORS = [
+    "#e94560","#00b894","#fdcb6e","#74b9ff","#a29bfe",
+    "#fd79a8","#00cec9","#55efc4","#ffeaa7","#fab1a0",
+    "#6c5ce7","#e17055","#81ecec","#dfe6e9","#f9ca24",
+    "#f0932b","#eb4d4b","#6ab04c","#22a6b3","#be2edd",
+    "#4834d4","#130f40","#30336b","#c7ecee","#686de0",
+    "#badc58","#7ed6df","#e056fd","#f9ca24","#95e1d3"
+  ];
+
+  function nameToColor(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return COLORS[h % COLORS.length];
+  }
+
+  // ---- 그리드 초기 생성 ----
+  const grid = document.getElementById("grid");
+  for (let i = 0; i < 10000; i++) {
+    const seat = document.createElement("div");
+    seat.className = "seat inactive";
+    seat.dataset.num = i + 1;
+    seat.id = `seat-${i}`;
+    seat.addEventListener("click", () => onSeatClick(i));
+    grid.appendChild(seat);
+  }
+
+  // ---- Firebase 실시간 감지 ----
+  onValue(seatsRef, (snap) => {
+    seats = snap.val() || {};
+    renderGrid();
+    renderLeaderboard();
+  });
+
+  onValue(activeRef, (snap) => {
+    isActive = snap.val() === true;
+    updateStatus();
+    renderGrid();
+  });
+
+  // ---- 렌더링 ----
+  function renderGrid() {
+    for (let i = 0; i < 10000; i++) {
+      const el = document.getElementById(`seat-${i}`);
+      if (!el) continue;
+      const data = seats[i];
+      if (data) {
+        el.className = "seat claimed";
+        el.style.background = data.color;
+        el.dataset.owner = data.name;
+        el.title = data.name;
+      } else {
+        el.style.background = "";
+        el.dataset.owner = "";
+        el.title = "";
+        el.className = isActive ? "seat" : "seat inactive";
+      }
+    }
+    const claimed = Object.keys(seats).length;
+    document.getElementById("claimed-count").textContent = claimed;
+    document.getElementById("remain-count").textContent  = 10000 - claimed;
+  }
+
+  function renderLeaderboard() {
+    const counts = {};
+    const colorMap = {};
+    for (const key in seats) {
+      const { name, color } = seats[key];
+      counts[name]   = (counts[name] || 0) + 1;
+      colorMap[name] = color;
+    }
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    document.getElementById("people-count").textContent = sorted.length;
+
+    const list = document.getElementById("lb-list");
+    list.innerHTML = "";
+    sorted.forEach(([name, cnt], idx) => {
+      const rank = idx + 1;
+      const item = document.createElement("div");
+      item.className = "lb-item";
+      const rankClass = rank === 1 ? "gold" : rank === 2 ? "silver" : rank === 3 ? "bronze" : "";
+      item.innerHTML = `
+        <div class="lb-rank ${rankClass}">${rank}</div>
+        <div class="lb-dot" style="background:${colorMap[name]}"></div>
+        <div class="lb-name">${escapeHtml(name)}</div>
+        <div class="lb-count">${cnt} seats</div>
+      `;
+      list.appendChild(item);
     });
+  }
 
-    if (!seatNumber) {
-      showResult('Sorry, all seats are taken!', 'error');
+  function updateStatus() {
+    const badge = document.getElementById("status-badge");
+    if (isActive) {
+      badge.textContent = "Active";
+      badge.className = "status-badge active";
+    } else {
+      badge.textContent = "Stopped";
+      badge.className = "status-badge inactive";
+    }
+  }
+
+  // ---- 좌석 클릭 ----
+  function onSeatClick(idx) {
+    if (!isActive) return;
+    if (seats[idx]) return; // 이미 선택됨
+    pendingSeat = idx;
+    document.getElementById("name-modal-title").textContent = `#${idx + 1} — Enter your name`;
+    document.getElementById("name-input").value  = "";
+    document.getElementById("name-error").textContent = "";
+    document.getElementById("name-modal").classList.add("show");
+    setTimeout(() => document.getElementById("name-input").focus(), 100);
+  }
+
+  function closeNameModal() {
+    document.getElementById("name-modal").classList.remove("show");
+    pendingSeat = null;
+  }
+
+  function confirmName() {
+    const name = document.getElementById("name-input").value.trim();
+    if (!name) {
+      document.getElementById("name-error").textContent = "Please enter your name.";
       return;
     }
+    const color = nameToColor(name);
+    set(ref(db, `seats/${pendingSeat}`), { name, color });
+    closeNameModal();
+  }
 
-    await db.ref('reservations').push({
-      name,
-      seat_number: seatNumber,
-      reserved_at: new Date().toISOString()
-    });
+  // Enter 키 지원
+  document.getElementById("name-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") confirmName();
+    if (e.key === "Escape") closeNameModal();
+  });
 
-    showResult(`Seat #${seatNumber} booked successfully!`, 'success');
-    document.getElementById('name-input').value = '';
+  // ---- 비밀번호 모달 ----
+  function askPassword(action) {
+    pendingAction = action;
+    const titles = { start: "Start — Admin Auth", stop: "Stop — Admin Auth", reset: "Reset All — Admin Auth" };
+    document.getElementById("pw-modal-title").textContent = titles[action];
+    document.getElementById("pw-input").value  = "";
+    document.getElementById("pw-error").textContent = "";
+    document.getElementById("pw-modal").classList.add("show");
+    setTimeout(() => document.getElementById("pw-input").focus(), 100);
+  }
 
-    if (seatNumber >= TOTAL_SEATS) {
-      db.ref('state/is_open').set(false);
+  function closePwModal() {
+    document.getElementById("pw-modal").classList.remove("show");
+    pendingAction = null;
+  }
+
+  function confirmPassword() {
+    const pw = document.getElementById("pw-input").value;
+    if (pw !== ADMIN_PASSWORD) {
+      document.getElementById("pw-error").textContent = "Incorrect password.";
+      document.getElementById("pw-input").value = "";
+      return;
     }
-  } catch (e) {
-    showResult('Network error. Please try again.', 'error');
-  } finally {
-    reserving = false;
-    btn.disabled = false;
-    btn.textContent = 'Book Now';
-  }
-}
-
-function showResult(msg, type) {
-  const el = document.getElementById('result-msg');
-  el.textContent = msg;
-  el.className = 'result-msg ' + type;
-  el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 5000);
-}
-
-// ── Admin ──
-function openAdminModal() {
-  document.getElementById('modal-overlay').classList.add('show');
-  document.getElementById('admin-modal').classList.add('show');
-  document.getElementById('admin-password').value = '';
-  setTimeout(() => document.getElementById('admin-password').focus(), 100);
-}
-
-function closeAdminModal() {
-  document.getElementById('modal-overlay').classList.remove('show');
-  document.getElementById('admin-modal').classList.remove('show');
-}
-
-function adminAction(action) {
-  const pwd = document.getElementById('admin-password').value;
-  if (pwd !== ADMIN_PASSWORD) {
-    document.getElementById('admin-password').style.borderColor = '#ff5050';
-    setTimeout(() => document.getElementById('admin-password').style.borderColor = '', 1000);
-    return;
+    const action = pendingAction;
+    closePwModal();
+    if (action === "start") {
+      set(activeRef, true);
+    } else if (action === "stop") {
+      set(activeRef, false);
+    } else if (action === "reset") {
+      remove(seatsRef);
+      set(activeRef, false);
+    }
   }
 
-  if (action === 'open') {
-    db.ref('state/is_open').set(true);
-    closeAdminModal();
-  } else if (action === 'close') {
-    db.ref('state/is_open').set(false);
-    closeAdminModal();
-  } else if (action === 'reset') {
-    if (!confirm('Reset all reservations? This cannot be undone.')) return;
-    db.ref('reservations').remove();
-    db.ref('seat_count').set(0);
-    db.ref('state/is_open').set(false);
-    closeAdminModal();
-    showResult('All reservations have been reset.', 'success');
+  document.getElementById("pw-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") confirmPassword();
+    if (e.key === "Escape") closePwModal();
+  });
+
+  // HTML onclick에서 접근할 수 있도록 전역 등록
+  window.askPassword    = askPassword;
+  window.closePwModal   = closePwModal;
+  window.confirmPassword = confirmPassword;
+  window.closeNameModal  = closeNameModal;
+  window.confirmName     = confirmName;
+
+  // ---- XSS 방지 ----
+  function escapeHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
-}
-
-document.getElementById('name-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doReserve();
-});
-
-document.getElementById('admin-password').addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeAdminModal();
-});
 </script>
+
 </body>
 </html>
