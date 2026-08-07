@@ -2,10 +2,28 @@ import tkinter as tk
 from tkinter import filedialog
 import threading
 import time
+import os
+import shutil
 import pyautogui
 import pyperclip
+from PIL import Image, ImageDraw
 
-SITE_URL = "https://shk-cell.github.io/Macro_Classroom/"
+SITE_URL  = "https://shk-cell.github.io/Macro_Classroom/"
+BASE_SIZE = 28
+BG_COLOR     = (10, 26, 10)
+BORDER_COLOR = (0, 204, 51)
+
+def generate_images():
+    """CSS 색상 그대로 DPI별 이미지 생성"""
+    os.makedirs("images", exist_ok=True)
+    scales = {"100": 1.0, "125": 1.25, "150": 1.5}
+    for label, scale in scales.items():
+        size = round(BASE_SIZE * scale)
+        img  = Image.new("RGB", (size, size), BG_COLOR)
+        draw = ImageDraw.Draw(img)
+        draw.rectangle([0, 0, size-1, size-1], outline=BORDER_COLOR, width=1)
+        img.save(f"images/empty_seat_{label}.png")
+    shutil.copy("images/empty_seat_100.png", "images/empty_seat.png")
 
 def run(name, image_path, confidence, delay, log, stop_event):
     log(f"Starting in 3 seconds. Switch to browser!")
@@ -43,16 +61,17 @@ class App:
         self.root = root
         self.stop_event = threading.Event()
         root.title("V2 - Image Recognition Macro")
-        root.geometry("420x480")
+        root.geometry("440x520")
         root.resizable(False, False)
         root.configure(bg="#1a1a1a")
 
         self._label("Name")
         self.name = self._entry("YourName")
 
-        self._label("Image Path")
+        # ── Image Path ──
+        self._label("Reference Image")
         f = tk.Frame(root, bg="#1a1a1a")
-        f.pack(fill="x", padx=14, pady=(0, 4))
+        f.pack(fill="x", padx=14, pady=(0, 2))
         self.img_var = tk.StringVar(value="images/empty_seat.png")
         tk.Entry(f, textvariable=self.img_var, bg="#0d0d0d", fg="#00ff41",
                  insertbackground="#00ff41", font=("Consolas", 10),
@@ -61,8 +80,22 @@ class App:
                   bg="#2a2a2a", fg="#00ff41", font=("Consolas", 9),
                   relief="flat", padx=8, cursor="hand2").pack(side="left", padx=(6, 0))
 
-        tk.Label(root, text="* Capture an empty seat screenshot and save it first",
-                 bg="#1a1a1a", fg="#555", font=("Consolas", 8)).pack()
+        # ── Generate Buttons ──
+        gen_frame = tk.Frame(root, bg="#1a1a1a")
+        gen_frame.pack(fill="x", padx=14, pady=(4, 0))
+
+        btn_cfg = dict(font=("Consolas", 9, "bold"), relief="flat",
+                       cursor="hand2", pady=4, padx=6)
+
+        tk.Button(gen_frame, text="Generate (100%)", bg="#003a00", fg="#00ff41",
+                  command=lambda: self._gen("100"), **btn_cfg).pack(side="left", padx=(0,4))
+        tk.Button(gen_frame, text="Generate (125%)", bg="#003a00", fg="#00ff41",
+                  command=lambda: self._gen("125"), **btn_cfg).pack(side="left", padx=(0,4))
+        tk.Button(gen_frame, text="Generate (150%)", bg="#003a00", fg="#00ff41",
+                  command=lambda: self._gen("150"), **btn_cfg).pack(side="left")
+
+        tk.Label(root, text="* Match your Windows Display Scale setting",
+                 bg="#1a1a1a", fg="#555", font=("Consolas", 8)).pack(anchor="w", padx=14, pady=(4,0))
 
         self._label("Confidence (0.0 ~ 1.0)")
         self.conf = self._entry("0.8")
@@ -72,6 +105,16 @@ class App:
 
         self._btn_row()
         self._log_box()
+
+        # 시작 시 자동 생성
+        generate_images()
+        self.log("Reference images generated. (images/empty_seat_100/125/150.png)")
+
+    def _gen(self, scale):
+        generate_images()
+        path = f"images/empty_seat_{scale}.png"
+        self.img_var.set(path)
+        self.log(f"Generated & selected: {path}")
 
     def _label(self, text):
         tk.Label(self.root, text=text, bg="#1a1a1a", fg="#00ff41",
