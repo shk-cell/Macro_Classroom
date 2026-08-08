@@ -5,7 +5,7 @@ import random
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-SITE_URL = "https://shk-cell.github.io/Macro_Classroom/"
+SITE_URL = "https://macro-classroom.shk-8b6.workers.dev/"
 
 def run(name, delay, log, stop_event):
     log("Launching browser...")
