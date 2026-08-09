@@ -417,20 +417,12 @@
   // ============================================================
   // Firebase 설정 — 본인 프로젝트 config 로 교체하세요
   // ============================================================
-  const firebaseConfig = {
-    apiKey:            "AIzaSyC-exCTRjt0gzf-JncDmVS1TiUh2lIccdo",
-    authDomain:        "macro-classroom.firebaseapp.com",
-    databaseURL:       "https://macro-classroom-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId:         "macro-classroom",
-    storageBucket:     "macro-classroom.firebasestorage.app",
-    messagingSenderId: "365546886549",
-    appId:             "1:365546886549:web:f6782ce34cf7aea568129c"
-  };
+  const firebaseConfig = JSON.parse(atob("eyJhcGlLZXkiOiJBSXphU3lDLWV4Q1RSanQwZ3pmLUpuY0RtVlMxVGlVaDJsSWNjZG8iLCJhdXRoRG9tYWluIjoibWFjcm8tY2xhc3Nyb29tLmZpcmViYXNlYXBwLmNvbSIsImRhdGFiYXNlVVJMIjoiaHR0cHM6Ly9tYWNyby1jbGFzc3Jvb20tZGVmYXVsdC1ydGRiLmFzaWEtc291dGhlYXN0MS5maXJlYmFzZWRhdGFiYXNlLmFwcCIsInByb2plY3RJZCI6Im1hY3JvLWNsYXNzcm9vbSIsInN0b3JhZ2VCdWNrZXQiOiJtYWNyby1jbGFzc3Jvb20uZmlyZWJhc2VzdG9yYWdlLmFwcCIsIm1lc3NhZ2luZ1NlbmRlcklkIjoiMzY1NTQ2ODg2NTQ5IiwiYXBwSWQiOiIxOjM2NTU0Njg4NjU0OTp3ZWI6ZjY3ODJjZTM0Y2Y3YWVhNTY4MTI5YyJ9"));
 
   // ============================================================
   // 관리자 비밀번호 (원하는 값으로 변경하세요)
   // ============================================================
-  const ADMIN_PASSWORD = "wjdqh";
+  const ADMIN_PASSWORD_HASH = "73187266073c55e3c92eb62ec001e11cc6478cf50c68430600d249e3c3d6717b";
 
   // ============================================================
   const app = initializeApp(firebaseConfig);
@@ -597,9 +589,15 @@
     pendingAction = null;
   }
 
-  function confirmPassword() {
+  async function hashPw(pw) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function confirmPassword() {
     const pw = document.getElementById("pw-input").value;
-    if (pw !== ADMIN_PASSWORD) {
+    const hash = await hashPw(pw);
+    if (hash !== ADMIN_PASSWORD_HASH) {
       document.getElementById("pw-error").textContent = "Incorrect password.";
       document.getElementById("pw-input").value = "";
       return;
