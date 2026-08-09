@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TKD 10000 Seats</title>
+  <title>TKD 1000 Seats</title>
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
@@ -355,7 +355,7 @@
 <body>
 
 <header>
-  <h1>TKD 10000 Seats</h1>
+  <h1>TKD 1000 Seats</h1>
   <div class="header-controls">
     <div id="status-badge" class="status-badge inactive">Stopped</div>
     <button class="btn btn-start" onclick="askPassword('start')"><span>Start</span></button>
@@ -367,7 +367,7 @@
 <div class="main">
   <div class="grid-wrap">
     <div class="grid-info">
-      Total 10000 &nbsp;|&nbsp; Claimed: <span id="claimed-count">0</span> &nbsp;|&nbsp; Remaining: <span id="remain-count">10000</span>
+      Total 1000 &nbsp;|&nbsp; Claimed: <span id="claimed-count">0</span> &nbsp;|&nbsp; Remaining: <span id="remain-count">1000</span>
     </div>
     <div class="grid-scroll"><div id="grid"></div></div>
   </div>
@@ -455,7 +455,7 @@
 
   // ---- 그리드 초기 생성 ----
   const grid = document.getElementById("grid");
-  for (let i = 0; i < 10000; i++) {
+  for (let i = 0; i < 1000; i++) {
     const seat = document.createElement("div");
     seat.className = "seat inactive";
     seat.dataset.num = i + 1;
@@ -479,7 +479,7 @@
 
   // ---- 렌더링 ----
   function renderGrid() {
-    for (let i = 0; i < 10000; i++) {
+    for (let i = 0; i < 1000; i++) {
       const el = document.getElementById(`seat-${i}`);
       if (!el) continue;
       const data = seats[i];
@@ -497,7 +497,7 @@
     }
     const claimed = Object.keys(seats).length;
     document.getElementById("claimed-count").textContent = claimed;
-    document.getElementById("remain-count").textContent  = 10000 - claimed;
+    document.getElementById("remain-count").textContent  = 1000 - claimed;
   }
 
   function renderLeaderboard() {
