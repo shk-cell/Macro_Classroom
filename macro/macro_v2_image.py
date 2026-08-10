@@ -8,7 +8,7 @@ import pyautogui
 import pyperclip
 from PIL import Image, ImageDraw
 
-SITE_URL  = "https://shk-cell.github.io/Macro_Classroom/"
+SITE_URL  = "https://macro-classroom.shk-8b6.workers.dev/"
 BASE_SIZE = 28
 BG_COLOR     = (10, 26, 10)
 BORDER_COLOR = (0, 204, 51)

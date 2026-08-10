@@ -5,7 +5,7 @@ import time
 import pyautogui
 import pyperclip
 
-SITE_URL = "https://shk-cell.github.io/Macro_Classroom/"
+SITE_URL = "https://macro-classroom.shk-8b6.workers.dev/"
 
 def run(name, coords, delay, log, stop_event):
     if not coords:
