@@ -580,11 +580,12 @@
 
     lastClaimTime = now;
     const color = nameToColor(name);
+    const seatId = pendingSeat;
     closeNameModal();
     fetch('/claim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seatId: pendingSeat, name, color })
+      body: JSON.stringify({ seatId, name, color })
     });
   }
 

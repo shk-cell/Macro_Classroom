@@ -9,7 +9,11 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === 'POST' && url.pathname === '/claim') {
-      return handleClaim(request, env);
+      try {
+        return await handleClaim(request, env);
+      } catch (e) {
+        return json({ error: e.message, stack: e.stack }, 500);
+      }
     }
 
     return new Response(HTML, {
@@ -28,7 +32,7 @@ async function handleClaim(request, env) {
   if (count >= MAX_REQUESTS) {
     return json({ error: 'Rate limited' }, 429);
   }
-  await env.RATE_LIMIT.put(key, String(count + 1), { expirationTtl: 20 });
+  await env.RATE_LIMIT.put(key, String(count + 1), { expirationTtl: 60 });
 
   // ── 요청 파싱 ──
   let body;
