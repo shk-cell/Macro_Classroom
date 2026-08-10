@@ -1,7 +1,8 @@
 import HTML from './index.html';
 
 const FIREBASE_DB_URL = 'https://macro-classroom-default-rtdb.asia-southeast1.firebasedatabase.app';
-const COOLDOWN_MS = 1000; // IP당 최소 예매 간격 (ms)
+const WINDOW_MS   = 10000; // 10초 윈도우
+const MAX_REQUESTS = 50;   // 윈도우당 최대 요청 수 (학생 40명 + 여유)
 
 export default {
   async fetch(request, env) {
@@ -18,15 +19,16 @@ export default {
 };
 
 async function handleClaim(request, env) {
-  // ── 속도 제한: IP당 1초에 1개 ──
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const key = `rl:${ip}`;
-  const last = await env.RATE_LIMIT.get(key);
+  // ── 속도 제한: IP당 10초에 50개 ──
+  const ip     = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const window = Math.floor(Date.now() / WINDOW_MS);
+  const key    = `rl:${ip}:${window}`;
 
-  if (last && Date.now() - parseInt(last) < COOLDOWN_MS) {
-    return json({ error: 'Too fast' }, 429);
+  const count = parseInt(await env.RATE_LIMIT.get(key) || '0');
+  if (count >= MAX_REQUESTS) {
+    return json({ error: 'Rate limited' }, 429);
   }
-  await env.RATE_LIMIT.put(key, String(Date.now()), { expirationTtl: 10 });
+  await env.RATE_LIMIT.put(key, String(count + 1), { expirationTtl: 20 });
 
   // ── 요청 파싱 ──
   let body;
