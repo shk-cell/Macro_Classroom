@@ -12,7 +12,7 @@ export default {
       try {
         return await handleClaim(request, env);
       } catch (e) {
-        return json({ error: e.message, stack: e.stack }, 500);
+        return json({ error: 'Server error' }, 500);
       }
     }
 

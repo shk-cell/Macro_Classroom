@@ -586,6 +586,16 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ seatId, name, color })
+    }).then(async res => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = {
+          429: '요청이 너무 많습니다. 잠시 후 다시 시도하세요.',
+          403: '게임이 활성화 상태가 아닙니다.',
+          409: '이미 예매된 좌석입니다.',
+        }[res.status] || '예매에 실패했습니다.';
+        alert(msg);
+      }
     });
   }
 
