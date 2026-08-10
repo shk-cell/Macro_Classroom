@@ -580,8 +580,12 @@
 
     lastClaimTime = now;
     const color = nameToColor(name);
-    set(ref(db, `seats/${pendingSeat}`), { name, color });
     closeNameModal();
+    fetch('/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seatId: pendingSeat, name, color })
+    });
   }
 
   // Enter 키 지원
