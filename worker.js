@@ -1,8 +1,8 @@
 import HTML from './index.html';
 
 const FIREBASE_DB_URL = 'https://macro-classroom-default-rtdb.asia-southeast1.firebasedatabase.app';
-const WINDOW_MS   = 10000; // 10초 윈도우
-const MAX_REQUESTS = 50;   // 윈도우당 최대 요청 수 (학생 40명 + 여유)
+const WINDOW_MS    = 1000; // 1초 윈도우
+const MAX_REQUESTS = 1000; // 초당 최대 요청 수
 
 export default {
   async fetch(request, env) {
