@@ -1,8 +1,6 @@
 import HTML from './index.html';
 
 const FIREBASE_DB_URL = 'https://macro-classroom-default-rtdb.asia-southeast1.firebasedatabase.app';
-const WINDOW_MS    = 1000; // 1초 윈도우
-const MAX_REQUESTS = 100;  // 초당 최대 요청 수
 
 export default {
   async fetch(request, env) {
@@ -23,17 +21,6 @@ export default {
 };
 
 async function handleClaim(request, env) {
-  // ── 속도 제한: IP당 10초에 50개 ──
-  const ip     = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const window = Math.floor(Date.now() / WINDOW_MS);
-  const key    = `rl:${ip}:${window}`;
-
-  const count = parseInt(await env.RATE_LIMIT.get(key) || '0');
-  if (count >= MAX_REQUESTS) {
-    return json({ error: 'Rate limited' }, 429);
-  }
-  await env.RATE_LIMIT.put(key, String(count + 1), { expirationTtl: 60 });
-
   // ── 요청 파싱 ──
   let body;
   try {
