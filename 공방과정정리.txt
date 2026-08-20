@@ -1,0 +1,51 @@
+● 초기 상태
+  - 보안은 전혀 고려하지 않고 AI를 활용해 예매 사이트를 빠르게 제작
+  - 예매 사이트 → Firebase DB 직접 연결
+  - Firebase Rules: 누구나 읽기/쓰기 가능 (완전 개방)
+  - 단순히 "좌석을 클릭하면 예매된다"는 기능 구현에만 집중한 상태
+  - Firebase 초기화 코드가 index.html 소스코드에 그대로 노출
+    → API KEY, DB URL 등이 F12만 눌러도 누구나 볼 수 있는 상태
+  - 난 몰랐음...
+
+
+  ---
+  1라운드
+
+  학생 공략:   - 예매 사이트에서 좌석을 클릭하면 네트워크 탭에 Firebase 요청이 그대로 찍힘
+                   - Firebase REST API URL, 프로젝트 이름, 데이터 구조까지 노출
+                  -  Firebase Rules가 열려있음을 발견 → Firebase에 직접 접근
+  
+  - 학생1: 선생님이 Start 누르기 전에 혼자 게임 시작
+  - 학생2: REST API PUT 메서드로 1000석 한꺼번에 쓰기
+  - 다른 학생들도 똑같이 PUT 메서드 사용, 자기들끼리 서로 예매한 자리를 서로가 다시 덮어쓰는 난리 발생.
+
+  선생님 대응:
+  - Firebase Rules 수정 → 인증된 계정(auth != null)만 쓰기 허용 (Firebase 직접 접근 차단)
+  - Cloudflare Worker 추가 → 좌석 덮어쓰기 방지, 게임 Stop 시 예매 차단
+  ※ Worker는 Firebase URL 자체를 막는 게 아님. Firebase 직접 접근은 Rules가 담당.
+
+  ---
+  2라운드
+
+  학생 공략: Firebase에 직접 계정 생성 → 인증 토큰으로 Firebase REST API 직접 호출 → Worker 우회
+  - Worker는 Cloudflare의 별도 서버일 뿐, Firebase URL 자체를 막지 않음
+  - Firebase에 직접 REST API 요청하면 Worker를 아예 건너뜀
+  - Firebase Rules는 "인증된 계정이면 누구나 허용"(auth != null) 상태
+  - → 계정 하나 만들어서 인증 토큰 획득 → 토큰 달고 Firebase REST API 직접 호출 성공
+
+  선생님 대응: Firebase 신규 가입 완전 차단 + Rules를 admin 이메일만 허용으로 강화
+  → 이제 Firebase 직접 접근 경로 완전 차단
+
+  ---
+  3라운드
+
+  학생 공략: Firebase 직접 접근이 완전히 막혔으니 /claim을 최대한 빠르게 호출
+  - 학생6: Python 멀티스레드로 /claim 동시 다발 요청
+  - 학생7: 브라우저 콘솔에서 JavaScript 비동기 병렬 요청으로 1000개 동시 발사 → 1초 안에 1000석 완료
+
+  선생님 대응: Cloudflare KV로 IP당 초당 100회 Rate Limit 적용
+
+  ---
+  결말
+
+  KV 무료 플랜 일일 쓰기 한도를 5분 만에 소진 → Rate Limit 어쩔 수 없이 제거 → 학생 승리
