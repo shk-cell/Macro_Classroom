@@ -11,30 +11,52 @@
   ---
   1라운드
 
-  학생 공략:   - 예매 사이트에서 좌석을 클릭하면 네트워크 탭에 Firebase 요청이 그대로 찍힘
-                   - Firebase REST API URL, 프로젝트 이름, 데이터 구조까지 노출
-                  -  Firebase Rules가 열려있음을 발견 → Firebase에 직접 접근
-  
+  학생 공략:
+  - 예매 사이트에서 좌석을 클릭하면 네트워크 탭에 Firebase 요청이 그대로 찍힘
+  - Firebase REST API URL, 프로젝트 이름, 데이터 구조까지 노출
+  - Firebase Rules가 열려있음을 발견 → Firebase에 직접 접근
+
   - 학생1: 선생님이 Start 누르기 전에 혼자 게임 시작
   - 학생2: REST API PUT 메서드로 1000석 한꺼번에 쓰기
   - 다른 학생들도 똑같이 PUT 메서드 사용, 자기들끼리 서로 예매한 자리를 서로가 다시 덮어쓰는 난리 발생.
 
   선생님 대응:
-  - Firebase Rules 수정 → 인증된 계정(auth != null)만 쓰기 허용 (Firebase 직접 접근 차단)
+  - Firebase Rules 수정 → 인증된 계정(auth != null)만 쓰기 허용
+    ※ 정정: 이건 "직접 접근 완전 차단"이 아니라 "비로그인 상태의 직접 접근만 차단"이었음.
+       이 시점엔 신규 회원가입 자체를 막지 않았기 때문에, 계정만 새로 만들면 여전히
+       이 Rules를 통과할 수 있는 구멍이 남아 있었음. (→ 2라운드에서 그대로 뚫림)
   - Cloudflare Worker 추가 → 좌석 덮어쓰기 방지, 게임 Stop 시 예매 차단
-  ※ Worker는 Firebase URL 자체를 막는 게 아님. Firebase 직접 접근은 Rules가 담당.
+    ※ 이 두 방어 로직(중복 예매 체크, 게임 활성 상태 체크)은 Worker 코드 안에만 구현되어 있음.
+       Firebase Rules 자체에는 이런 검증이 전혀 없기 때문에, Worker를 거치지 않고
+       Firebase에 곧장 쓰면 이미 찜된 좌석도 덮어쓸 수 있고, 게임이 Stop 상태여도
+       예매가 그대로 통과되는 구조였음. 즉 Worker는 "정문 검문소"일 뿐, 후문(Firebase 직접 URL)에는
+       적용되지 않는 방어였음.
+  ※ Worker는 Firebase URL 자체를 막는 게 아님. Firebase 직접 접근을 막는 문지기는 오직 Rules뿐이고,
+     Worker와 Firebase REST API는 서로 다른 주소의 별개 서버라 Worker가 Firebase 앞단 게이트웨이
+     역할을 하는 게 아님.
 
   ---
   2라운드
 
-  학생 공략: Firebase에 직접 계정 생성 → 인증 토큰으로 Firebase REST API 직접 호출 → Worker 우회
-  - Worker는 Cloudflare의 별도 서버일 뿐, Firebase URL 자체를 막지 않음
-  - Firebase에 직접 REST API 요청하면 Worker를 아예 건너뜀
-  - Firebase Rules는 "인증된 계정이면 누구나 허용"(auth != null) 상태
-  - → 계정 하나 만들어서 인증 토큰 획득 → 토큰 달고 Firebase REST API 직접 호출 성공
+  학생 공략: Firebase에 신규 계정 생성 → 로그인 토큰(idToken) 발급 → 그 토큰을 들고
+             Firebase REST API를 직접 호출 → Worker를 거치지 않고 곧장 Firebase에 접근
+             (정확히는 "Worker를 뚫었다"가 아니라, 애초에 Worker의 URL로 요청을 보내지 않고
+             Firebase 자체 URL로 바로 요청을 보낸 것 — Worker 코드는 한 줄도 거치지 않음)
 
-  선생님 대응: Firebase 신규 가입 완전 차단 + Rules를 admin 이메일만 허용으로 강화
-  → 이제 Firebase 직접 접근 경로 완전 차단
+  - Worker는 Cloudflare의 별도 서버일 뿐, Firebase URL 자체를 막지 않음
+  - Firebase에 직접 REST API 요청하면 Worker의 중복 체크·게임 상태 체크를 아예 거치지 않음
+  - Firebase Rules는 "인증된 계정이면 누구나 허용"(auth != null) 상태였고,
+    이 시점까지도 신규 회원가입 자체는 막혀있지 않았음
+  - → 계정 하나 새로 만들어서 인증 토큰 획득 → 토큰 달고 Firebase REST API 직접 호출 성공
+    (1라운드 때와 마찬가지로, 이미 찜된 좌석 덮어쓰기·Stop 상태 무시 예매도 구조적으로는
+    다시 가능한 상태였음 — Worker의 방어 로직이 이 경로엔 적용 안 되므로)
+
+  선생님 대응: Firebase 신규 가입 완전 차단 + Rules를 "인증된 아무 계정"에서
+              "admin 이메일 하나만" 허용으로 강화
+  → 이제서야 "Firebase 직접 접근 경로 완전 차단"이 실제로 성립함
+    (신규 계정을 만들 수도 없고, 설령 기존에 계정이 있어도 admin이 아니면 Rules를 통과 못 함)
+  → 이 시점부터 모든 쓰기가 사실상 Worker(자체 관리자 시크릿으로 Rules를 아예 우회해서
+    쓰는 유일한 경로) 하나로만 흐르게 됨
 
   ---
   3라운드
@@ -49,3 +71,23 @@
   결말
 
   KV 무료 플랜 일일 쓰기 한도를 5분 만에 소진 → Rate Limit 어쩔 수 없이 제거 → 학생 승리
+
+
+  ---
+  라운드별 방어 구멍 요약 (복기)
+
+  1라운드 대응의 허점:
+    "인증된 계정만 허용" ≠ "직접 접근 차단". 로그인이라는 관문은 만들었지만,
+    그 관문을 통과하는 열쇠(신규 계정)를 여전히 누구나 무제한으로 발급받을 수 있었음.
+    또한 Worker에 넣은 비즈니스 로직(중복 방지, Stop 차단)은 Worker 경로에서만 동작해서,
+    Firebase에 직접 접근하면 그대로 무력화되는 구조였음.
+
+  2라운드 대응에서야 완성:
+    "신규가입 차단" + "admin 전용 Rules"를 동시에 걸어야 비로소
+    "Firebase 직접 접근 차단"이라는 말이 실제로 성립함.
+
+  전체 교훈:
+    애플리케이션 계층(Worker) 방어와 데이터 계층(Firebase Rules) 방어는 별개다.
+    한쪽만 막으면 다른 쪽 문이 그대로 열려 있을 수 있고, 진짜 방어는
+    "누구나 알 수 있는 백엔드 URL(Firebase REST API)" 자체를 데이터 계층에서
+    엄격하게 걸어 잠가야 완성된다.
