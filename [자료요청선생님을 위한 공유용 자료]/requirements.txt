@@ -1,0 +1,5 @@
+selenium
+pyautogui
+pyperclip
+opencv-python
+pillow
