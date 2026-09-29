@@ -10,3 +10,7 @@ id = "d1ad4b4cff9344269c76bd8fe78b202b"
 [[rules]]
 type = "Text"
 globs = ["**/*.html"]
+
+# public/ 폴더의 정적 파일(예: /macro_v3.zip)을 그대로 제공
+[assets]
+directory = "./public"
