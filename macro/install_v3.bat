@@ -25,6 +25,19 @@ python -m pip install --upgrade pip
 python -m pip install selenium
 
 echo.
+:: Check if Google Chrome is installed
+if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" goto chrome_ok
+if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" goto chrome_ok
+if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" goto chrome_ok
+echo Installing Google Chrome...
+winget install -e --id Google.Chrome --silent --accept-package-agreements --accept-source-agreements
+:chrome_ok
+
+echo.
+echo Downloading chromedriver (may take ~1 min)...
+python -c "from selenium import webdriver; o = webdriver.ChromeOptions(); o.add_argument('--headless=new'); webdriver.Chrome(options=o).quit(); print('chromedriver ready!')"
+
+echo.
 echo ================================
 echo  All done! You can now run:
 echo    python macro_v3_tag.py

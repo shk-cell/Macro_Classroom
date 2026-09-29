@@ -9,8 +9,13 @@ SITE_URL = "https://macro-classroom.shk-8b6.workers.dev/"
 
 def run(name, delay, log, stop_event):
     log("Launching browser...")
-    driver = webdriver.Chrome()
-    driver.get(SITE_URL)
+    try:
+        driver = webdriver.Chrome()
+        driver.get(SITE_URL)
+    except Exception as e:
+        log(f"Browser launch failed: {type(e).__name__}")
+        log(str(e).splitlines()[0][:200] if str(e) else "Check Chrome is installed.")
+        return
     time.sleep(2)
     log("Connected. Searching for empty seats!")
     count = 0
