@@ -1,0 +1,36 @@
+// ===== V4: /claim API 직접 호출 + Promise.allSettled 병렬 요청 =====
+const NAME = "YourName";
+
+// 사이트와 같은 색상 규칙 (nameToColor 복제)
+const COLORS = ["#ff4757","#ff6348","#ff9f43","#ffd32a","#badc58","#6ab04c","#2ed573","#1dd1a1","#00d2d3","#48dbfb",
+  "#54a0ff","#2980b9","#5352ed","#a55eea","#be2edd","#f368e0","#fd79a8","#e84393","#c0392b","#ee5a24",
+  "#fdcb6e","#f9ca24","#b8e994","#26de81","#00b894","#0652dd","#9980fa","#e056fd","#ff5e57","#ffdd59"];
+let h = 0;
+for (const ch of NAME) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+const COLOR = COLORS[h % COLORS.length];
+
+// 1) HTML에서 빈 좌석 번호 수집 (V3와 같은 셀렉터)
+const seatIds = [...document.querySelectorAll('.seat:not(.claimed):not(.inactive)')]
+  .map(el => Number(el.id.replace('seat-', '')));
+console.log(`빈 좌석 ${seatIds.length}개 → 동시에 요청`);
+
+// 2) 좌석 하나를 요청하는 비동기 함수
+const claim = (seatId) =>
+  fetch('/claim', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ seatId, name: NAME, color: COLOR })
+  }).then(res => res.status);
+
+// 3) 전부 동시에 발사 → 모두 끝날 때까지 기다림
+console.time('V4');
+const results = await Promise.allSettled(seatIds.map(claim));
+console.timeEnd('V4');
+
+// 4) 결과 집계 (200=성공, 409=이미 예매됨, 403=게임 중지)
+const summary = {};
+results.forEach(r => {
+  const key = r.status === 'fulfilled' ? r.value : 'network error';
+  summary[key] = (summary[key] || 0) + 1;
+});
+console.table(summary);
